@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Convertor</title>
 <meta name="theme-color" content="#16233D">
 <link rel="manifest" href="manifest.json">
@@ -69,8 +69,12 @@
   }
   .base-row{
     display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .base-select-line{
+    display:flex;
     align-items:center;
-    gap:12px;
   }
   .select-wrap{
     position:relative;
@@ -91,7 +95,7 @@
   .ccy-select{
     background:transparent;
     border:none;
-    font-size:14px;
+    font-size:16px;
     font-weight:700;
     letter-spacing:0.02em;
     color:var(--ink-soft);
@@ -102,8 +106,7 @@
     max-width:100%;
   }
   .base-amount{
-    flex:1;
-    min-width:0;
+    width:100%;
     border:none;
     background:transparent;
     font-size:34px;
@@ -159,7 +162,7 @@
     font-variant-numeric:tabular-nums;
   }
   .row-amount{
-    width:110px;
+    width:130px;
     flex-shrink:0;
     border:none;
     background:transparent;
@@ -227,7 +230,7 @@
     border-radius:12px;
     border:1px solid var(--line);
     background:var(--card);
-    font-size:14px;
+    font-size:16px;
     color:var(--ink);
   }
   .search-input:focus{
@@ -293,8 +296,10 @@
 
   <div class="base-card">
     <div class="base-row">
-      <div class="select-wrap">
-        <select class="ccy-select" id="baseCcy" aria-label="Base currency"></select>
+      <div class="base-select-line">
+        <div class="select-wrap">
+          <select class="ccy-select" id="baseCcy" aria-label="Base currency"></select>
+        </div>
       </div>
       <input class="base-amount" id="baseAmount" inputmode="decimal" type="text" value="1" aria-label="Amount">
     </div>
@@ -464,6 +469,20 @@ function fmt(n){
   return n < 1 ? n.toFixed(4) : n.toLocaleString(undefined,{maximumFractionDigits:2});
 }
 
+// Shrinks an input's font as its text gets longer, so long numbers
+// never clip instead of overflowing the field.
+function autosize(el, maxSize, minSize){
+  const len = el.value.length || 1;
+  const threshold = 6;
+  let size = maxSize;
+  if(len > threshold){
+    size = Math.max(minSize, maxSize - (len - threshold) * 1.8);
+  }
+  el.style.fontSize = size + "px";
+}
+function autosizeBase(){ autosize(baseAmount, 34, 18); }
+function autosizeRow(input){ autosize(input, 19, 16); }
+
 async function fetchRates(){
   try{
     statusLine.textContent = "Updating rates…";
@@ -520,6 +539,7 @@ function buildList(){
     listEl.appendChild(row);
 
     const input = row.querySelector(".row-amount");
+    autosizeRow(input);
     input.addEventListener("focus", () => input.select());
     input.addEventListener("input", () => {
       input.value = input.value.replace(/[^0-9.]/g, "");
@@ -541,6 +561,7 @@ function buildList(){
 // without rebuilding the DOM (so focus/cursor position is preserved).
 function refreshValues(skipCode){
   baseAmount.value = fmt(baseValue) || baseAmount.value;
+  autosizeBase();
 
   listEl.querySelectorAll(".ccy-row").forEach(row => {
     const code = row.dataset.code;
@@ -549,6 +570,7 @@ function refreshValues(skipCode){
     const input = row.querySelector(".row-amount");
     if(rate != null){
       input.value = fmt(baseValue * rate);
+      autosizeRow(input);
     }
   });
 }
@@ -556,6 +578,7 @@ function refreshValues(skipCode){
 function onBaseEdit(){
   const amt = parseFloat(baseAmount.value);
   baseValue = isNaN(amt) ? 0 : amt;
+  autosizeBase();
   refreshValues(null);
 }
 
@@ -564,12 +587,15 @@ function onRowEdit(code, rawValue){
   const amt = parseFloat(rawValue);
   const numeric = isNaN(amt) ? 0 : amt;
   baseValue = numeric / rates[code];
+  const editedInput = listEl.querySelector(`.ccy-row[data-code="${code}"] .row-amount`);
+  if(editedInput) autosizeRow(editedInput);
   refreshValues(code);
 }
 
 baseAmount.addEventListener("focus", () => baseAmount.select());
 baseAmount.addEventListener("input", () => {
   baseAmount.value = baseAmount.value.replace(/[^0-9.]/g,"");
+  autosizeBase();
   onBaseEdit();
 });
 
@@ -602,6 +628,7 @@ async function init(){
   populateBaseSelect();
   baseCcy.value = base;
   baseAmount.value = fmt(baseValue);
+  autosizeBase();
   updateLabels();
   if(rates) buildList();
   fetchRates();
