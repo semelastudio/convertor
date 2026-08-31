@@ -20,6 +20,7 @@
     --teal:#2E6E62;
     --line:#D8DEE7;
     --muted:#6B7686;
+    --danger:#B14B3F;
   }
   *{box-sizing:border-box;}
   html,body{height:100%;}
@@ -29,14 +30,15 @@
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     color:var(--ink);
     display:flex;
-    align-items:center;
+    align-items:flex-start;
     justify-content:center;
-    padding:24px;
+    padding:24px 20px 60px;
     -webkit-font-smoothing:antialiased;
+    min-height:100%;
   }
   .app{
     width:100%;
-    max-width:380px;
+    max-width:400px;
   }
   .masthead{
     display:flex;
@@ -50,56 +52,35 @@
     font-weight:600;
     letter-spacing:0.01em;
     margin:0;
-    color:var(--ink);
   }
   .masthead .updated{
     font-size:12px;
     color:var(--muted);
     font-variant-numeric:tabular-nums;
   }
-  .card{
+
+  .base-card{
     background:var(--card);
     border-radius:20px;
-    padding:22px 20px 18px;
+    padding:18px 20px;
     box-shadow:0 1px 2px rgba(22,35,61,0.06), 0 12px 28px rgba(22,35,61,0.08);
     border:1px solid var(--line);
+    margin-bottom:14px;
   }
-  .row{
+  .base-row{
     display:flex;
     align-items:center;
     gap:12px;
-    padding:14px 4px;
-  }
-  .row .side{
-    flex:1;
-    min-width:0;
-  }
-  .ccy-select{
-    display:flex;
-    align-items:center;
-    gap:6px;
-    background:transparent;
-    border:none;
-    font-size:13px;
-    font-weight:600;
-    letter-spacing:0.03em;
-    color:var(--ink-soft);
-    padding:2px 0 6px;
-    cursor:pointer;
-    -webkit-appearance:none;
-    appearance:none;
-  }
-  select.ccy-select{
-    background-image:none;
   }
   .select-wrap{
     position:relative;
+    flex-shrink:0;
   }
   .select-wrap::after{
     content:"";
     position:absolute;
     right:2px;
-    top:8px;
+    top:9px;
     width:7px;
     height:7px;
     border-right:1.5px solid var(--muted);
@@ -107,71 +88,148 @@
     transform:rotate(45deg);
     pointer-events:none;
   }
-  .amount{
-    width:100%;
+  .ccy-select{
+    background:transparent;
+    border:none;
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:0.02em;
+    color:var(--ink-soft);
+    padding:2px 16px 4px 0;
+    cursor:pointer;
+    -webkit-appearance:none;
+    appearance:none;
+  }
+  .base-amount{
+    flex:1;
+    min-width:0;
     border:none;
     background:transparent;
-    font-size:32px;
+    font-size:34px;
     font-weight:600;
     color:var(--ink);
     font-variant-numeric:tabular-nums;
     padding:0;
     letter-spacing:-0.01em;
+    text-align:right;
   }
-  .amount:focus{outline:none;}
-  .amount::placeholder{color:#C3CAD5;}
-  .divider{
+  .base-amount:focus{outline:none;}
+
+  .list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .ccy-row{
+    background:var(--card);
+    border-radius:16px;
+    padding:14px 14px 14px 18px;
+    border:1px solid var(--line);
     display:flex;
     align-items:center;
     gap:12px;
-    margin:2px 4px;
   }
-  .divider .hair{
+  .ccy-row .info{
     flex:1;
-    height:1px;
-    background:var(--line);
+    min-width:0;
   }
-  .swap-btn{
-    width:38px;
-    height:38px;
+  .ccy-row .code{
+    font-size:13px;
+    font-weight:700;
+    letter-spacing:0.03em;
+    color:var(--ink-soft);
+  }
+  .ccy-row .sub{
+    font-size:11.5px;
+    color:var(--muted);
+    margin-top:2px;
+    font-variant-numeric:tabular-nums;
+  }
+  .ccy-row .value{
+    font-size:20px;
+    font-weight:600;
+    color:var(--ink);
+    font-variant-numeric:tabular-nums;
+    white-space:nowrap;
+  }
+  .remove-btn{
+    width:26px;
+    height:26px;
     border-radius:50%;
-    border:1px solid var(--line);
-    background:var(--paper);
+    border:none;
+    background:transparent;
+    color:var(--muted);
     display:flex;
     align-items:center;
     justify-content:center;
     cursor:pointer;
-    transition:transform 0.18s ease, background 0.18s ease;
     flex-shrink:0;
+    font-size:18px;
+    line-height:1;
+    transition:background 0.15s ease, color 0.15s ease;
   }
-  .swap-btn:active{
-    transform:rotate(180deg);
-    background:#E4E9F0;
+  .remove-btn:hover{ background:#F3E7E4; color:var(--danger); }
+
+  .add-row{
+    margin-top:14px;
   }
-  .swap-btn svg{
-    width:16px;
-    height:16px;
-    stroke:var(--gold);
-  }
-  .rate-line{
-    text-align:center;
-    font-size:13px;
+  .add-btn{
+    width:100%;
+    padding:13px 14px;
+    border-radius:16px;
+    border:1.5px dashed var(--line);
+    background:transparent;
     color:var(--muted);
-    margin-top:16px;
-    font-variant-numeric:tabular-nums;
-  }
-  .rate-line strong{
-    color:var(--teal);
+    font-size:13.5px;
     font-weight:600;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    transition:border-color 0.15s ease, color 0.15s ease;
   }
+  .add-btn:hover{ border-color:var(--gold); color:var(--gold); }
+  .add-btn .plus{
+    font-size:16px;
+    font-weight:400;
+  }
+
+  .add-picker{
+    margin-top:10px;
+    display:none;
+    gap:8px;
+  }
+  .add-picker.open{ display:flex; }
+  .add-picker select{
+    flex:1;
+    padding:11px 12px;
+    border-radius:12px;
+    border:1px solid var(--line);
+    background:var(--card);
+    font-size:14px;
+    color:var(--ink);
+  }
+  .add-picker button{
+    padding:11px 16px;
+    border-radius:12px;
+    border:none;
+    background:var(--ink);
+    color:#fff;
+    font-size:13.5px;
+    font-weight:600;
+    cursor:pointer;
+  }
+
   .status{
     text-align:center;
     font-size:11.5px;
     color:var(--muted);
-    margin-top:10px;
+    margin-top:16px;
     min-height:14px;
+    padding:0 8px;
   }
-  .status.error{ color:#B14B3F; }
+  .status.error{ color:var(--danger); }
 </style>
 </head>
 <body>
@@ -182,77 +240,52 @@
     <span class="updated" id="updatedLabel">—</span>
   </div>
 
-  <div class="card">
-    <div class="row">
-      <div class="side">
-        <div class="select-wrap">
-          <select class="ccy-select" id="fromCcy" aria-label="From currency"></select>
-        </div>
-        <input class="amount" id="fromAmount" inputmode="decimal" type="text" value="1" aria-label="Amount to convert">
+  <div class="base-card">
+    <div class="base-row">
+      <div class="select-wrap">
+        <select class="ccy-select" id="baseCcy" aria-label="Base currency"></select>
       </div>
+      <input class="base-amount" id="baseAmount" inputmode="decimal" type="text" value="1" aria-label="Amount">
     </div>
+  </div>
 
-    <div class="divider">
-      <div class="hair"></div>
-      <button class="swap-btn" id="swapBtn" aria-label="Swap currencies">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M7 10 L7 4 M7 4 L4 7 M7 4 L10 7"/>
-          <path d="M17 14 L17 20 M17 20 L20 17 M17 20 L14 17"/>
-        </svg>
-      </button>
-      <div class="hair"></div>
+  <div class="list" id="list"></div>
+
+  <div class="add-row">
+    <button class="add-btn" id="addBtn"><span class="plus">+</span> Add currency</button>
+    <div class="add-picker" id="addPicker">
+      <select id="addSelect" aria-label="Choose currency to add"></select>
+      <button id="addConfirm">Add</button>
     </div>
-
-    <div class="row">
-      <div class="side">
-        <div class="select-wrap">
-          <select class="ccy-select" id="toCcy" aria-label="To currency"></select>
-        </div>
-        <input class="amount" id="toAmount" inputmode="decimal" type="text" value="" placeholder="0" aria-label="Converted amount">
-      </div>
-    </div>
-
-    <div class="rate-line" id="rateLine">Loading rate…</div>
   </div>
 
   <div class="status" id="statusLine"></div>
 </div>
 
 <script>
-const CURRENCIES = ["USD","EUR","GBP","NZD","AUD","JPY","CAD","CHF","CNY","INR","SGD","HKD","ZAR","SEK","NOK","MXN","BRL","AED","THB","KRW"];
-const STORAGE_KEY = "rate-app-state-v1";
+const ALL_CURRENCIES = ["USD","EUR","GBP","NZD","AUD","JPY","CAD","CHF","CNY","INR","SGD","HKD","ZAR","SEK","NOK","MXN","BRL","AED","THB","KRW","PLN","DKK","ILS","IDR","PHP"];
+const STORAGE_KEY = "rate-app-state-v2";
+const DEFAULT_BASE = "USD";
+const DEFAULT_LIST = ["EUR","GBP","NZD"];
 
-const fromCcy = document.getElementById("fromCcy");
-const toCcy = document.getElementById("toCcy");
-const fromAmount = document.getElementById("fromAmount");
-const toAmount = document.getElementById("toAmount");
-const rateLine = document.getElementById("rateLine");
-const statusLine = document.getElementById("statusLine");
+const baseCcy = document.getElementById("baseCcy");
+const baseAmount = document.getElementById("baseAmount");
+const listEl = document.getElementById("list");
 const updatedLabel = document.getElementById("updatedLabel");
-const swapBtn = document.getElementById("swapBtn");
+const statusLine = document.getElementById("statusLine");
+const addBtn = document.getElementById("addBtn");
+const addPicker = document.getElementById("addPicker");
+const addSelect = document.getElementById("addSelect");
+const addConfirm = document.getElementById("addConfirm");
 
 let rates = null;
-let base = "USD";
+let base = DEFAULT_BASE;
+let targetList = [...DEFAULT_LIST];
 let lastUpdated = null;
-
-function populateSelects(defaultFrom, defaultTo){
-  CURRENCIES.forEach(c => {
-    const opt1 = document.createElement("option");
-    opt1.value = c; opt1.textContent = c;
-    fromCcy.appendChild(opt1);
-    const opt2 = document.createElement("option");
-    opt2.value = c; opt2.textContent = c;
-    toCcy.appendChild(opt2);
-  });
-  fromCcy.value = defaultFrom;
-  toCcy.value = defaultTo;
-}
 
 function saveState(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify({
-    from: fromCcy.value,
-    to: toCcy.value,
-    rates, base, lastUpdated
+    base, targetList, rates, lastUpdated
   }));
 }
 
@@ -264,32 +297,25 @@ function loadState(){
   }catch(e){ return null; }
 }
 
-async function fetchRates(){
-  try{
-    statusLine.textContent = "Updating rates…";
-    statusLine.className = "status";
-    const res = await fetch(`https://api.frankfurter.dev/v1/latest?base=${base}`);
-    if(!res.ok) throw new Error("Network response was not ok");
-    const data = await res.json();
-    rates = data.rates;
-    rates[base] = 1;
-    lastUpdated = new Date().toISOString();
-    saveState();
-    statusLine.textContent = "";
-    updateLabels();
-    convert();
-  }catch(err){
-    if(rates){
-      statusLine.textContent = "Offline — showing last saved rates";
-      statusLine.className = "status error";
-      updateLabels();
-      convert();
-    } else {
-      statusLine.textContent = "Couldn't load rates. Check your connection.";
-      statusLine.className = "status error";
-      rateLine.textContent = "No rate available";
-    }
-  }
+function populateBaseSelect(){
+  baseCcy.innerHTML = "";
+  ALL_CURRENCIES.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c; opt.textContent = c;
+    baseCcy.appendChild(opt);
+  });
+  baseCcy.value = base;
+}
+
+function populateAddSelect(){
+  const available = ALL_CURRENCIES.filter(c => c !== base && !targetList.includes(c));
+  addSelect.innerHTML = "";
+  available.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c; opt.textContent = c;
+    addSelect.appendChild(opt);
+  });
+  addBtn.style.display = available.length ? "flex" : "none";
 }
 
 function updateLabels(){
@@ -300,80 +326,114 @@ function updateLabels(){
   }
 }
 
-function getRate(from, to){
-  if(!rates) return null;
-  if(from === base) return rates[to];
-  if(to === base) return 1 / rates[from];
-  return rates[to] / rates[from];
+async function fetchRates(){
+  try{
+    statusLine.textContent = "Updating rates…";
+    statusLine.className = "status";
+    const res = await fetch(`https://api.frankfurter.dev/v1/latest?base=${base}`);
+    if(!res.ok) throw new Error("bad response");
+    const data = await res.json();
+    rates = data.rates;
+    rates[base] = 1;
+    lastUpdated = new Date().toISOString();
+    saveState();
+    statusLine.textContent = "";
+    updateLabels();
+    render();
+  }catch(err){
+    if(rates){
+      statusLine.textContent = "Offline — showing last saved rates";
+      statusLine.className = "status error";
+      updateLabels();
+      render();
+    }else{
+      statusLine.textContent = "Couldn't load rates. Check your connection.";
+      statusLine.className = "status error";
+    }
+  }
 }
 
-function convert(){
-  const from = fromCcy.value;
-  const to = toCcy.value;
-  const amt = parseFloat(fromAmount.value);
-  const r = getRate(from, to);
+function render(){
+  listEl.innerHTML = "";
+  const amt = parseFloat(baseAmount.value);
 
-  if(r == null){
-    rateLine.textContent = "Rate unavailable for this pair";
-    return;
-  }
+  targetList.forEach(code => {
+    const rate = rates ? rates[code] : null;
+    const row = document.createElement("div");
+    row.className = "ccy-row";
 
-  if(!isNaN(amt)){
-    const result = amt * r;
-    toAmount.value = result < 1 ? result.toFixed(4) : result.toLocaleString(undefined,{maximumFractionDigits:2});
-  } else {
-    toAmount.value = "";
-  }
+    let valueText = "—";
+    if(rate != null && !isNaN(amt)){
+      const result = amt * rate;
+      valueText = result < 1 ? result.toFixed(4) : result.toLocaleString(undefined,{maximumFractionDigits:2});
+    }
+    const rateText = rate != null ? `1 ${base} = ${rate.toFixed(4)} ${code}` : "rate unavailable";
 
-  rateLine.innerHTML = `1 ${from} = <strong>${r < 1 ? r.toFixed(4) : r.toFixed(4)}</strong> ${to}`;
+    row.innerHTML = `
+      <div class="info">
+        <div class="code">${code}</div>
+        <div class="sub">${rateText}</div>
+      </div>
+      <div class="value">${valueText}</div>
+      <button class="remove-btn" aria-label="Remove ${code}" data-code="${code}">✕</button>
+    `;
+    listEl.appendChild(row);
+  });
+
+  listEl.querySelectorAll(".remove-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      targetList = targetList.filter(c => c !== btn.dataset.code);
+      saveState();
+      populateAddSelect();
+      render();
+    });
+  });
+
+  populateAddSelect();
 }
 
-async function ensureRatesForBase(){
-  if(fromCcy.value !== base){
-    base = fromCcy.value;
+baseAmount.addEventListener("input", () => {
+  baseAmount.value = baseAmount.value.replace(/[^0-9.]/g,"");
+  render();
+});
+
+baseCcy.addEventListener("change", async () => {
+  base = baseCcy.value;
+  targetList = targetList.filter(c => c !== base);
+  saveState();
+  await fetchRates();
+});
+
+addBtn.addEventListener("click", () => {
+  addPicker.classList.toggle("open");
+});
+
+addConfirm.addEventListener("click", async () => {
+  const code = addSelect.value;
+  if(!code) return;
+  targetList.push(code);
+  addPicker.classList.remove("open");
+  saveState();
+  if(rates && rates[code] == null){
     await fetchRates();
   } else {
-    convert();
+    populateAddSelect();
+    render();
   }
-}
-
-fromAmount.addEventListener("input", () => {
-  fromAmount.value = fromAmount.value.replace(/[^0-9.]/g,"");
-  convert();
-});
-
-fromCcy.addEventListener("change", async () => {
-  saveState();
-  await ensureRatesForBase();
-});
-
-toCcy.addEventListener("change", () => {
-  saveState();
-  convert();
-});
-
-swapBtn.addEventListener("click", async () => {
-  const f = fromCcy.value;
-  const t = toCcy.value;
-  fromCcy.value = t;
-  toCcy.value = f;
-  saveState();
-  await ensureRatesForBase();
 });
 
 async function init(){
   const saved = loadState();
-  const defaultFrom = saved?.from || "USD";
-  const defaultTo = saved?.to || "EUR";
-  populateSelects(defaultFrom, defaultTo);
-  base = defaultFrom;
-
-  if(saved?.rates){
-    rates = saved.rates;
-    lastUpdated = saved.lastUpdated;
-    updateLabels();
-    convert();
+  if(saved){
+    base = saved.base || DEFAULT_BASE;
+    targetList = saved.targetList || [...DEFAULT_LIST];
+    rates = saved.rates || null;
+    lastUpdated = saved.lastUpdated || null;
   }
+  populateBaseSelect();
+  baseCcy.value = base;
+  updateLabels();
+  if(rates) render();
   fetchRates();
 }
 
