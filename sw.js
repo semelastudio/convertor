@@ -1,4 +1,4 @@
-const CACHE_NAME = "rate-app-v1";
+const CACHE_NAME = "convertor-app-v2";
 const ASSETS = [
   "./",
   "./index.html",
@@ -27,7 +27,7 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
   // Let rate API calls go straight to the network (don't cache live rates here)
-  if (url.hostname.includes("frankfurter.dev")) {
+  if (url.hostname.includes("er-api.com")) {
     return;
   }
 

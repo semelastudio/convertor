@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Rate</title>
+<title>Convertor</title>
 <meta name="theme-color" content="#16233D">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Rate">
+<meta name="apple-mobile-web-app-title" content="Convertor">
 <style>
   :root{
     --ink:#16233D;
@@ -99,6 +99,7 @@
     cursor:pointer;
     -webkit-appearance:none;
     appearance:none;
+    max-width:100%;
   }
   .base-amount{
     flex:1;
@@ -123,7 +124,7 @@
   .ccy-row{
     background:var(--card);
     border-radius:16px;
-    padding:14px 14px 14px 18px;
+    padding:12px 14px 12px 18px;
     border:1px solid var(--line);
     display:flex;
     align-items:center;
@@ -133,28 +134,46 @@
     flex:1;
     min-width:0;
   }
+  .ccy-row .code-line{
+    display:flex;
+    align-items:baseline;
+    gap:6px;
+  }
   .ccy-row .code{
     font-size:13px;
     font-weight:700;
     letter-spacing:0.03em;
     color:var(--ink-soft);
   }
+  .ccy-row .name{
+    font-size:12px;
+    color:var(--muted);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
   .ccy-row .sub{
-    font-size:11.5px;
+    font-size:11px;
     color:var(--muted);
     margin-top:2px;
     font-variant-numeric:tabular-nums;
   }
-  .ccy-row .value{
-    font-size:20px;
+  .row-amount{
+    width:110px;
+    flex-shrink:0;
+    border:none;
+    background:transparent;
+    font-size:19px;
     font-weight:600;
     color:var(--ink);
     font-variant-numeric:tabular-nums;
-    white-space:nowrap;
+    padding:0;
+    text-align:right;
   }
+  .row-amount:focus{ outline:none; }
   .remove-btn{
-    width:26px;
-    height:26px;
+    width:24px;
+    height:24px;
     border-radius:50%;
     border:none;
     background:transparent;
@@ -164,7 +183,7 @@
     justify-content:center;
     cursor:pointer;
     flex-shrink:0;
-    font-size:18px;
+    font-size:17px;
     line-height:1;
     transition:background 0.15s ease, color 0.15s ease;
   }
@@ -198,27 +217,59 @@
   .add-picker{
     margin-top:10px;
     display:none;
+    flex-direction:column;
     gap:8px;
   }
   .add-picker.open{ display:flex; }
-  .add-picker select{
-    flex:1;
-    padding:11px 12px;
+  .search-input{
+    width:100%;
+    padding:12px 14px;
     border-radius:12px;
     border:1px solid var(--line);
     background:var(--card);
     font-size:14px;
     color:var(--ink);
   }
-  .add-picker button{
-    padding:11px 16px;
-    border-radius:12px;
-    border:none;
-    background:var(--ink);
-    color:#fff;
-    font-size:13.5px;
-    font-weight:600;
+  .search-input:focus{
+    outline:none;
+    border-color:var(--gold);
+  }
+  .search-results{
+    max-height:240px;
+    overflow-y:auto;
+    border-radius:14px;
+    border:1px solid var(--line);
+    background:var(--card);
+  }
+  .search-item{
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+    padding:11px 14px;
     cursor:pointer;
+    border-bottom:1px solid var(--line);
+  }
+  .search-item:last-child{ border-bottom:none; }
+  .search-item:hover{ background:var(--paper); }
+  .search-item .code{
+    font-size:13px;
+    font-weight:700;
+    letter-spacing:0.03em;
+    color:var(--ink-soft);
+    flex-shrink:0;
+  }
+  .search-item .name{
+    font-size:12.5px;
+    color:var(--muted);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .search-empty{
+    padding:14px;
+    text-align:center;
+    font-size:12.5px;
+    color:var(--muted);
   }
 
   .status{
@@ -236,7 +287,7 @@
 
 <div class="app">
   <div class="masthead">
-    <h1>Rate</h1>
+    <h1>Convertor</h1>
     <span class="updated" id="updatedLabel">—</span>
   </div>
 
@@ -254,8 +305,8 @@
   <div class="add-row">
     <button class="add-btn" id="addBtn"><span class="plus">+</span> Add currency</button>
     <div class="add-picker" id="addPicker">
-      <select id="addSelect" aria-label="Choose currency to add"></select>
-      <button id="addConfirm">Add</button>
+      <input class="search-input" id="searchInput" type="text" placeholder="Search by code or name…" aria-label="Search currency" autocomplete="off">
+      <div class="search-results" id="searchResults"></div>
     </div>
   </div>
 
@@ -263,8 +314,50 @@
 </div>
 
 <script>
-const ALL_CURRENCIES = ["USD","EUR","GBP","NZD","AUD","JPY","CAD","CHF","CNY","INR","SGD","HKD","ZAR","SEK","NOK","MXN","BRL","AED","THB","KRW","PLN","DKK","ILS","IDR","PHP"];
-const STORAGE_KEY = "rate-app-state-v2";
+const CURRENCY_NAMES = {
+  AED:"UAE Dirham", AFN:"Afghan Afghani", ALL:"Albanian Lek", AMD:"Armenian Dram",
+  ANG:"Netherlands Antillean Guilder", AOA:"Angolan Kwanza", ARS:"Argentine Peso",
+  AUD:"Australian Dollar", AWG:"Aruban Florin", AZN:"Azerbaijani Manat", BAM:"Bosnia-Herzegovina Mark",
+  BBD:"Barbadian Dollar", BDT:"Bangladeshi Taka", BGN:"Bulgarian Lev", BHD:"Bahraini Dinar",
+  BIF:"Burundian Franc", BMD:"Bermudan Dollar", BND:"Brunei Dollar", BOB:"Bolivian Boliviano",
+  BRL:"Brazilian Real", BSD:"Bahamian Dollar", BTN:"Bhutanese Ngultrum", BWP:"Botswanan Pula",
+  BYN:"Belarusian Ruble", BZD:"Belize Dollar", CAD:"Canadian Dollar", CDF:"Congolese Franc",
+  CHF:"Swiss Franc", CLP:"Chilean Peso", CNY:"Chinese Yuan", COP:"Colombian Peso",
+  CRC:"Costa Rican Colón", CUP:"Cuban Peso", CVE:"Cape Verdean Escudo", CZK:"Czech Koruna",
+  DJF:"Djiboutian Franc", DKK:"Danish Krone", DOP:"Dominican Peso", DZD:"Algerian Dinar",
+  EGP:"Egyptian Pound", ERN:"Eritrean Nakfa", ETB:"Ethiopian Birr", EUR:"Euro",
+  FJD:"Fijian Dollar", FKP:"Falkland Islands Pound", GBP:"British Pound", GEL:"Georgian Lari",
+  GHS:"Ghanaian Cedi", GIP:"Gibraltar Pound", GMD:"Gambian Dalasi", GNF:"Guinean Franc",
+  GTQ:"Guatemalan Quetzal", GYD:"Guyanaese Dollar", HKD:"Hong Kong Dollar", HNL:"Honduran Lempira",
+  HTG:"Haitian Gourde", HUF:"Hungarian Forint", IDR:"Indonesian Rupiah", ILS:"Israeli Shekel",
+  INR:"Indian Rupee", IQD:"Iraqi Dinar", IRR:"Iranian Rial", ISK:"Icelandic Króna",
+  JMD:"Jamaican Dollar", JOD:"Jordanian Dinar", JPY:"Japanese Yen", KES:"Kenyan Shilling",
+  KGS:"Kyrgystani Som", KHR:"Cambodian Riel", KMF:"Comorian Franc", KPW:"North Korean Won",
+  KRW:"South Korean Won", KWD:"Kuwaiti Dinar", KYD:"Cayman Islands Dollar", KZT:"Kazakhstani Tenge",
+  LAK:"Laotian Kip", LBP:"Lebanese Pound", LKR:"Sri Lankan Rupee", LRD:"Liberian Dollar",
+  LSL:"Lesotho Loti", LYD:"Libyan Dinar", MAD:"Moroccan Dirham", MDL:"Moldovan Leu",
+  MGA:"Malagasy Ariary", MKD:"Macedonian Denar", MMK:"Myanmar Kyat", MNT:"Mongolian Tugrik",
+  MOP:"Macanese Pataca", MRU:"Mauritanian Ouguiya", MUR:"Mauritian Rupee", MVR:"Maldivian Rufiyaa",
+  MWK:"Malawian Kwacha", MXN:"Mexican Peso", MYR:"Malaysian Ringgit", MZN:"Mozambican Metical",
+  NAD:"Namibian Dollar", NGN:"Nigerian Naira", NIO:"Nicaraguan Córdoba", NOK:"Norwegian Krone",
+  NPR:"Nepalese Rupee", NZD:"New Zealand Dollar", OMR:"Omani Rial", PAB:"Panamanian Balboa",
+  PEN:"Peruvian Sol", PGK:"Papua New Guinean Kina", PHP:"Philippine Peso", PKR:"Pakistani Rupee",
+  PLN:"Polish Zloty", PYG:"Paraguayan Guarani", QAR:"Qatari Rial", RON:"Romanian Leu",
+  RSD:"Serbian Dinar", RUB:"Russian Ruble", RWF:"Rwandan Franc", SAR:"Saudi Riyal",
+  SBD:"Solomon Islands Dollar", SCR:"Seychellois Rupee", SDG:"Sudanese Pound", SEK:"Swedish Krona",
+  SGD:"Singapore Dollar", SHP:"Saint Helena Pound", SLE:"Sierra Leonean Leone", SOS:"Somali Shilling",
+  SRD:"Surinamese Dollar", SSP:"South Sudanese Pound", STN:"São Tomé & Príncipe Dobra",
+  SYP:"Syrian Pound", SZL:"Swazi Lilangeni", THB:"Thai Baht", TJS:"Tajikistani Somoni",
+  TMT:"Turkmenistani Manat", TND:"Tunisian Dinar", TOP:"Tongan Paʻanga", TRY:"Turkish Lira",
+  TTD:"Trinidad & Tobago Dollar", TWD:"New Taiwan Dollar", TZS:"Tanzanian Shilling",
+  UAH:"Ukrainian Hryvnia", UGX:"Ugandan Shilling", USD:"US Dollar", UYU:"Uruguayan Peso",
+  UZS:"Uzbekistani Som", VES:"Venezuelan Bolívar", VND:"Vietnamese Dong", VUV:"Vanuatu Vatu",
+  WST:"Samoan Tala", XAF:"Central African CFA Franc", XCD:"East Caribbean Dollar",
+  XOF:"West African CFA Franc", XPF:"CFP Franc", YER:"Yemeni Rial", ZAR:"South African Rand",
+  ZMW:"Zambian Kwacha", ZWL:"Zimbabwean Dollar"
+};
+const ALL_CURRENCIES = Object.keys(CURRENCY_NAMES);
+const STORAGE_KEY = "rate-app-state-v3";
 const DEFAULT_BASE = "USD";
 const DEFAULT_LIST = ["EUR","GBP","NZD"];
 
@@ -275,17 +368,18 @@ const updatedLabel = document.getElementById("updatedLabel");
 const statusLine = document.getElementById("statusLine");
 const addBtn = document.getElementById("addBtn");
 const addPicker = document.getElementById("addPicker");
-const addSelect = document.getElementById("addSelect");
-const addConfirm = document.getElementById("addConfirm");
+const searchInput = document.getElementById("searchInput");
+const searchResults = document.getElementById("searchResults");
 
 let rates = null;
 let base = DEFAULT_BASE;
 let targetList = [...DEFAULT_LIST];
 let lastUpdated = null;
+let baseValue = 1;
 
 function saveState(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify({
-    base, targetList, rates, lastUpdated
+    base, targetList, rates, lastUpdated, baseValue
   }));
 }
 
@@ -297,25 +391,64 @@ function loadState(){
   }catch(e){ return null; }
 }
 
+function ccyLabel(code){
+  return `${code} — ${CURRENCY_NAMES[code] || ""}`;
+}
+
 function populateBaseSelect(){
   baseCcy.innerHTML = "";
   ALL_CURRENCIES.forEach(c => {
     const opt = document.createElement("option");
-    opt.value = c; opt.textContent = c;
+    opt.value = c; opt.textContent = ccyLabel(c);
     baseCcy.appendChild(opt);
   });
   baseCcy.value = base;
 }
 
-function populateAddSelect(){
-  const available = ALL_CURRENCIES.filter(c => c !== base && !targetList.includes(c));
-  addSelect.innerHTML = "";
-  available.forEach(c => {
-    const opt = document.createElement("option");
-    opt.value = c; opt.textContent = c;
-    addSelect.appendChild(opt);
-  });
+function availableCurrencies(){
+  return ALL_CURRENCIES.filter(c => c !== base && !targetList.includes(c));
+}
+
+function renderSearchResults(){
+  const available = availableCurrencies();
   addBtn.style.display = available.length ? "flex" : "none";
+
+  const query = searchInput.value.trim().toLowerCase();
+  const matches = query
+    ? available.filter(c =>
+        c.toLowerCase().includes(query) ||
+        (CURRENCY_NAMES[c] || "").toLowerCase().includes(query))
+    : available;
+
+  searchResults.innerHTML = "";
+
+  if(matches.length === 0){
+    const empty = document.createElement("div");
+    empty.className = "search-empty";
+    empty.textContent = "No currency matches that search";
+    searchResults.appendChild(empty);
+    return;
+  }
+
+  matches.forEach(code => {
+    const item = document.createElement("div");
+    item.className = "search-item";
+    item.innerHTML = `<span class="code">${code}</span><span class="name">${CURRENCY_NAMES[code] || ""}</span>`;
+    item.addEventListener("click", () => addCurrency(code));
+    searchResults.appendChild(item);
+  });
+}
+
+async function addCurrency(code){
+  targetList.push(code);
+  addPicker.classList.remove("open");
+  searchInput.value = "";
+  saveState();
+  if(rates && rates[code] == null){
+    await fetchRates();
+  } else {
+    buildList();
+  }
 }
 
 function updateLabels(){
@@ -326,26 +459,32 @@ function updateLabels(){
   }
 }
 
+function fmt(n){
+  if(isNaN(n)) return "";
+  return n < 1 ? n.toFixed(4) : n.toLocaleString(undefined,{maximumFractionDigits:2});
+}
+
 async function fetchRates(){
   try{
     statusLine.textContent = "Updating rates…";
     statusLine.className = "status";
-    const res = await fetch(`https://api.frankfurter.dev/v1/latest?base=${base}`);
+    const res = await fetch(`https://open.er-api.com/v6/latest/${base}`);
     if(!res.ok) throw new Error("bad response");
     const data = await res.json();
+    if(data.result !== "success") throw new Error("api error");
     rates = data.rates;
     rates[base] = 1;
-    lastUpdated = new Date().toISOString();
+    lastUpdated = data.time_last_update_utc ? new Date(data.time_last_update_utc).toISOString() : new Date().toISOString();
     saveState();
     statusLine.textContent = "";
     updateLabels();
-    render();
+    buildList();
   }catch(err){
     if(rates){
       statusLine.textContent = "Offline — showing last saved rates";
       statusLine.className = "status error";
       updateLabels();
-      render();
+      buildList();
     }else{
       statusLine.textContent = "Couldn't load rates. Check your connection.";
       statusLine.className = "status error";
@@ -353,48 +492,85 @@ async function fetchRates(){
   }
 }
 
-function render(){
+// Rebuilds the row DOM structure. Call only when the list itself, the base
+// currency, or freshly fetched rates change — not on every keystroke.
+function buildList(){
   listEl.innerHTML = "";
-  const amt = parseFloat(baseAmount.value);
 
   targetList.forEach(code => {
     const rate = rates ? rates[code] : null;
     const row = document.createElement("div");
     row.className = "ccy-row";
+    row.dataset.code = code;
 
-    let valueText = "—";
-    if(rate != null && !isNaN(amt)){
-      const result = amt * rate;
-      valueText = result < 1 ? result.toFixed(4) : result.toLocaleString(undefined,{maximumFractionDigits:2});
-    }
     const rateText = rate != null ? `1 ${base} = ${rate.toFixed(4)} ${code}` : "rate unavailable";
+    const value = rate != null ? fmt(baseValue * rate) : "";
 
     row.innerHTML = `
       <div class="info">
-        <div class="code">${code}</div>
+        <div class="code-line">
+          <span class="code">${code}</span>
+          <span class="name">${CURRENCY_NAMES[code] || ""}</span>
+        </div>
         <div class="sub">${rateText}</div>
       </div>
-      <div class="value">${valueText}</div>
+      <input class="row-amount" type="text" inputmode="decimal" value="${value}" aria-label="${code} amount">
       <button class="remove-btn" aria-label="Remove ${code}" data-code="${code}">✕</button>
     `;
     listEl.appendChild(row);
-  });
 
-  listEl.querySelectorAll(".remove-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      targetList = targetList.filter(c => c !== btn.dataset.code);
+    const input = row.querySelector(".row-amount");
+    input.addEventListener("focus", () => input.select());
+    input.addEventListener("input", () => {
+      input.value = input.value.replace(/[^0-9.]/g, "");
+      onRowEdit(code, input.value);
+    });
+
+    row.querySelector(".remove-btn").addEventListener("click", () => {
+      targetList = targetList.filter(c => c !== code);
       saveState();
-      populateAddSelect();
-      render();
+      buildList();
+      renderSearchResults();
     });
   });
 
-  populateAddSelect();
+  renderSearchResults();
 }
 
+// Updates every input's displayed value from the current baseValue,
+// without rebuilding the DOM (so focus/cursor position is preserved).
+function refreshValues(skipCode){
+  baseAmount.value = fmt(baseValue) || baseAmount.value;
+
+  listEl.querySelectorAll(".ccy-row").forEach(row => {
+    const code = row.dataset.code;
+    if(code === skipCode) return;
+    const rate = rates ? rates[code] : null;
+    const input = row.querySelector(".row-amount");
+    if(rate != null){
+      input.value = fmt(baseValue * rate);
+    }
+  });
+}
+
+function onBaseEdit(){
+  const amt = parseFloat(baseAmount.value);
+  baseValue = isNaN(amt) ? 0 : amt;
+  refreshValues(null);
+}
+
+function onRowEdit(code, rawValue){
+  if(!rates || rates[code] == null) return;
+  const amt = parseFloat(rawValue);
+  const numeric = isNaN(amt) ? 0 : amt;
+  baseValue = numeric / rates[code];
+  refreshValues(code);
+}
+
+baseAmount.addEventListener("focus", () => baseAmount.select());
 baseAmount.addEventListener("input", () => {
   baseAmount.value = baseAmount.value.replace(/[^0-9.]/g,"");
-  render();
+  onBaseEdit();
 });
 
 baseCcy.addEventListener("change", async () => {
@@ -406,21 +582,13 @@ baseCcy.addEventListener("change", async () => {
 
 addBtn.addEventListener("click", () => {
   addPicker.classList.toggle("open");
-});
-
-addConfirm.addEventListener("click", async () => {
-  const code = addSelect.value;
-  if(!code) return;
-  targetList.push(code);
-  addPicker.classList.remove("open");
-  saveState();
-  if(rates && rates[code] == null){
-    await fetchRates();
-  } else {
-    populateAddSelect();
-    render();
+  if(addPicker.classList.contains("open")){
+    renderSearchResults();
+    searchInput.focus();
   }
 });
+
+searchInput.addEventListener("input", renderSearchResults);
 
 async function init(){
   const saved = loadState();
@@ -429,11 +597,13 @@ async function init(){
     targetList = saved.targetList || [...DEFAULT_LIST];
     rates = saved.rates || null;
     lastUpdated = saved.lastUpdated || null;
+    baseValue = typeof saved.baseValue === "number" ? saved.baseValue : 1;
   }
   populateBaseSelect();
   baseCcy.value = base;
+  baseAmount.value = fmt(baseValue);
   updateLabels();
-  if(rates) render();
+  if(rates) buildList();
   fetchRates();
 }
 

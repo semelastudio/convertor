@@ -1,6 +1,6 @@
 {
-  "name": "Rate — Currency Converter",
-  "short_name": "Rate",
+  "name": "Convertor — Currency Converter",
+  "short_name": "Convertor",
   "description": "A simple, fast currency converter.",
   "start_url": "./index.html",
   "scope": "./",
