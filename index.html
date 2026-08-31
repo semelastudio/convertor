@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rate</title>
+<meta name="theme-color" content="#16233D">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Rate">
+<style>
+  :root{
+    --ink:#16233D;
+    --ink-soft:#2B3A57;
+    --paper:#EEF1F5;
+    --card:#FFFFFF;
+    --gold:#C98A2C;
+    --teal:#2E6E62;
+    --line:#D8DEE7;
+    --muted:#6B7686;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--paper);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{
+    width:100%;
+    max-width:380px;
+  }
+  .masthead{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom:14px;
+    padding:0 4px;
+  }
+  .masthead h1{
+    font-size:15px;
+    font-weight:600;
+    letter-spacing:0.01em;
+    margin:0;
+    color:var(--ink);
+  }
+  .masthead .updated{
+    font-size:12px;
+    color:var(--muted);
+    font-variant-numeric:tabular-nums;
+  }
+  .card{
+    background:var(--card);
+    border-radius:20px;
+    padding:22px 20px 18px;
+    box-shadow:0 1px 2px rgba(22,35,61,0.06), 0 12px 28px rgba(22,35,61,0.08);
+    border:1px solid var(--line);
+  }
+  .row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:14px 4px;
+  }
+  .row .side{
+    flex:1;
+    min-width:0;
+  }
+  .ccy-select{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:transparent;
+    border:none;
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:0.03em;
+    color:var(--ink-soft);
+    padding:2px 0 6px;
+    cursor:pointer;
+    -webkit-appearance:none;
+    appearance:none;
+  }
+  select.ccy-select{
+    background-image:none;
+  }
+  .select-wrap{
+    position:relative;
+  }
+  .select-wrap::after{
+    content:"";
+    position:absolute;
+    right:2px;
+    top:8px;
+    width:7px;
+    height:7px;
+    border-right:1.5px solid var(--muted);
+    border-bottom:1.5px solid var(--muted);
+    transform:rotate(45deg);
+    pointer-events:none;
+  }
+  .amount{
+    width:100%;
+    border:none;
+    background:transparent;
+    font-size:32px;
+    font-weight:600;
+    color:var(--ink);
+    font-variant-numeric:tabular-nums;
+    padding:0;
+    letter-spacing:-0.01em;
+  }
+  .amount:focus{outline:none;}
+  .amount::placeholder{color:#C3CAD5;}
+  .divider{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin:2px 4px;
+  }
+  .divider .hair{
+    flex:1;
+    height:1px;
+    background:var(--line);
+  }
+  .swap-btn{
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    background:var(--paper);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    transition:transform 0.18s ease, background 0.18s ease;
+    flex-shrink:0;
+  }
+  .swap-btn:active{
+    transform:rotate(180deg);
+    background:#E4E9F0;
+  }
+  .swap-btn svg{
+    width:16px;
+    height:16px;
+    stroke:var(--gold);
+  }
+  .rate-line{
+    text-align:center;
+    font-size:13px;
+    color:var(--muted);
+    margin-top:16px;
+    font-variant-numeric:tabular-nums;
+  }
+  .rate-line strong{
+    color:var(--teal);
+    font-weight:600;
+  }
+  .status{
+    text-align:center;
+    font-size:11.5px;
+    color:var(--muted);
+    margin-top:10px;
+    min-height:14px;
+  }
+  .status.error{ color:#B14B3F; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="masthead">
+    <h1>Rate</h1>
+    <span class="updated" id="updatedLabel">—</span>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <div class="side">
+        <div class="select-wrap">
+          <select class="ccy-select" id="fromCcy" aria-label="From currency"></select>
+        </div>
+        <input class="amount" id="fromAmount" inputmode="decimal" type="text" value="1" aria-label="Amount to convert">
+      </div>
+    </div>
+
+    <div class="divider">
+      <div class="hair"></div>
+      <button class="swap-btn" id="swapBtn" aria-label="Swap currencies">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M7 10 L7 4 M7 4 L4 7 M7 4 L10 7"/>
+          <path d="M17 14 L17 20 M17 20 L20 17 M17 20 L14 17"/>
+        </svg>
+      </button>
+      <div class="hair"></div>
+    </div>
+
+    <div class="row">
+      <div class="side">
+        <div class="select-wrap">
+          <select class="ccy-select" id="toCcy" aria-label="To currency"></select>
+        </div>
+        <input class="amount" id="toAmount" inputmode="decimal" type="text" value="" placeholder="0" aria-label="Converted amount">
+      </div>
+    </div>
+
+    <div class="rate-line" id="rateLine">Loading rate…</div>
+  </div>
+
+  <div class="status" id="statusLine"></div>
+</div>
+
+<script>
+const CURRENCIES = ["USD","EUR","GBP","NZD","AUD","JPY","CAD","CHF","CNY","INR","SGD","HKD","ZAR","SEK","NOK","MXN","BRL","AED","THB","KRW"];
+const STORAGE_KEY = "rate-app-state-v1";
+
+const fromCcy = document.getElementById("fromCcy");
+const toCcy = document.getElementById("toCcy");
+const fromAmount = document.getElementById("fromAmount");
+const toAmount = document.getElementById("toAmount");
+const rateLine = document.getElementById("rateLine");
+const statusLine = document.getElementById("statusLine");
+const updatedLabel = document.getElementById("updatedLabel");
+const swapBtn = document.getElementById("swapBtn");
+
+let rates = null;
+let base = "USD";
+let lastUpdated = null;
+
+function populateSelects(defaultFrom, defaultTo){
+  CURRENCIES.forEach(c => {
+    const opt1 = document.createElement("option");
+    opt1.value = c; opt1.textContent = c;
+    fromCcy.appendChild(opt1);
+    const opt2 = document.createElement("option");
+    opt2.value = c; opt2.textContent = c;
+    toCcy.appendChild(opt2);
+  });
+  fromCcy.value = defaultFrom;
+  toCcy.value = defaultTo;
+}
+
+function saveState(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    from: fromCcy.value,
+    to: toCcy.value,
+    rates, base, lastUpdated
+  }));
+}
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return null;
+    return JSON.parse(raw);
+  }catch(e){ return null; }
+}
+
+async function fetchRates(){
+  try{
+    statusLine.textContent = "Updating rates…";
+    statusLine.className = "status";
+    const res = await fetch(`https://api.frankfurter.dev/v1/latest?base=${base}`);
+    if(!res.ok) throw new Error("Network response was not ok");
+    const data = await res.json();
+    rates = data.rates;
+    rates[base] = 1;
+    lastUpdated = new Date().toISOString();
+    saveState();
+    statusLine.textContent = "";
+    updateLabels();
+    convert();
+  }catch(err){
+    if(rates){
+      statusLine.textContent = "Offline — showing last saved rates";
+      statusLine.className = "status error";
+      updateLabels();
+      convert();
+    } else {
+      statusLine.textContent = "Couldn't load rates. Check your connection.";
+      statusLine.className = "status error";
+      rateLine.textContent = "No rate available";
+    }
+  }
+}
+
+function updateLabels(){
+  if(lastUpdated){
+    const d = new Date(lastUpdated);
+    updatedLabel.textContent = d.toLocaleDateString(undefined,{month:"short",day:"numeric"}) +
+      " " + d.toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit"});
+  }
+}
+
+function getRate(from, to){
+  if(!rates) return null;
+  if(from === base) return rates[to];
+  if(to === base) return 1 / rates[from];
+  return rates[to] / rates[from];
+}
+
+function convert(){
+  const from = fromCcy.value;
+  const to = toCcy.value;
+  const amt = parseFloat(fromAmount.value);
+  const r = getRate(from, to);
+
+  if(r == null){
+    rateLine.textContent = "Rate unavailable for this pair";
+    return;
+  }
+
+  if(!isNaN(amt)){
+    const result = amt * r;
+    toAmount.value = result < 1 ? result.toFixed(4) : result.toLocaleString(undefined,{maximumFractionDigits:2});
+  } else {
+    toAmount.value = "";
+  }
+
+  rateLine.innerHTML = `1 ${from} = <strong>${r < 1 ? r.toFixed(4) : r.toFixed(4)}</strong> ${to}`;
+}
+
+async function ensureRatesForBase(){
+  if(fromCcy.value !== base){
+    base = fromCcy.value;
+    await fetchRates();
+  } else {
+    convert();
+  }
+}
+
+fromAmount.addEventListener("input", () => {
+  fromAmount.value = fromAmount.value.replace(/[^0-9.]/g,"");
+  convert();
+});
+
+fromCcy.addEventListener("change", async () => {
+  saveState();
+  await ensureRatesForBase();
+});
+
+toCcy.addEventListener("change", () => {
+  saveState();
+  convert();
+});
+
+swapBtn.addEventListener("click", async () => {
+  const f = fromCcy.value;
+  const t = toCcy.value;
+  fromCcy.value = t;
+  toCcy.value = f;
+  saveState();
+  await ensureRatesForBase();
+});
+
+async function init(){
+  const saved = loadState();
+  const defaultFrom = saved?.from || "USD";
+  const defaultTo = saved?.to || "EUR";
+  populateSelects(defaultFrom, defaultTo);
+  base = defaultFrom;
+
+  if(saved?.rates){
+    rates = saved.rates;
+    lastUpdated = saved.lastUpdated;
+    updateLabels();
+    convert();
+  }
+  fetchRates();
+}
+
+init();
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
