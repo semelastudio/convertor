@@ -127,12 +127,37 @@
   .ccy-row{
     background:var(--card);
     border-radius:16px;
-    padding:12px 14px 12px 18px;
+    padding:12px 14px 12px 10px;
     border:1px solid var(--line);
     display:flex;
     align-items:center;
-    gap:12px;
+    gap:10px;
   }
+  .ccy-row.dragging{
+    position:relative;
+    z-index:30;
+    box-shadow:0 10px 24px rgba(22,35,61,0.20);
+    border-color:var(--gold);
+  }
+  .list.dragging-active .ccy-row:not(.dragging){
+    transition:transform 150ms ease;
+  }
+  .drag-handle{
+    width:22px;
+    height:34px;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--muted);
+    touch-action:none;
+    cursor:grab;
+    -webkit-user-select:none;
+    user-select:none;
+    -webkit-touch-callout:none;
+  }
+  .drag-handle svg circle{ fill:currentColor; }
+  .ccy-row.dragging .drag-handle{ cursor:grabbing; color:var(--gold); }
   .ccy-row .info{
     flex:1;
     min-width:0;
@@ -526,6 +551,13 @@ function buildList(){
     const value = rate != null ? fmt(baseValue * rate) : "";
 
     row.innerHTML = `
+      <div class="drag-handle" aria-label="Drag to reorder ${code}">
+        <svg viewBox="0 0 12 20" width="12" height="20">
+          <circle cx="3" cy="3" r="1.6"/><circle cx="9" cy="3" r="1.6"/>
+          <circle cx="3" cy="10" r="1.6"/><circle cx="9" cy="10" r="1.6"/>
+          <circle cx="3" cy="17" r="1.6"/><circle cx="9" cy="17" r="1.6"/>
+        </svg>
+      </div>
       <div class="info">
         <div class="code-line">
           <span class="code">${code}</span>
@@ -552,9 +584,85 @@ function buildList(){
       buildList();
       renderSearchResults();
     });
+
+    bindDragHandle(row);
   });
 
   renderSearchResults();
+}
+
+// Touch/mouse-friendly drag reordering using Pointer Events (works on
+// mobile, unlike HTML5 drag-and-drop). Dragged row follows the finger;
+// other rows slide to open a gap; order is committed on release.
+function bindDragHandle(row){
+  const handle = row.querySelector(".drag-handle");
+  let dragging = false;
+  let startY = 0;
+  let pitch = 0;
+  let draggedIndex = 0;
+  let targetIndex = 0;
+  let rowsSnapshot = [];
+
+  function onPointerDown(e){
+    e.preventDefault();
+    dragging = true;
+    startY = e.clientY;
+    rowsSnapshot = Array.from(listEl.querySelectorAll(".ccy-row"));
+    draggedIndex = rowsSnapshot.indexOf(row);
+    targetIndex = draggedIndex;
+    const tops = rowsSnapshot.map(r => r.getBoundingClientRect().top);
+    pitch = rowsSnapshot.length > 1 ? (tops[1] - tops[0]) : (row.offsetHeight + 10);
+    listEl.classList.add("dragging-active");
+    row.classList.add("dragging");
+    handle.setPointerCapture(e.pointerId);
+    handle.addEventListener("pointermove", onPointerMove);
+    handle.addEventListener("pointerup", onPointerUp);
+    handle.addEventListener("pointercancel", onPointerUp);
+  }
+
+  function onPointerMove(e){
+    if(!dragging) return;
+    const deltaY = e.clientY - startY;
+    row.style.transform = `translateY(${deltaY}px)`;
+
+    let newIndex = draggedIndex + Math.round(deltaY / pitch);
+    newIndex = Math.max(0, Math.min(rowsSnapshot.length - 1, newIndex));
+    if(newIndex === targetIndex) return;
+    targetIndex = newIndex;
+
+    rowsSnapshot.forEach((r, i) => {
+      if(r === row) return;
+      let shift = 0;
+      if(draggedIndex < targetIndex && i > draggedIndex && i <= targetIndex){
+        shift = -pitch;
+      } else if(draggedIndex > targetIndex && i >= targetIndex && i < draggedIndex){
+        shift = pitch;
+      }
+      r.style.transform = shift ? `translateY(${shift}px)` : "";
+    });
+  }
+
+  function onPointerUp(e){
+    if(!dragging) return;
+    dragging = false;
+    handle.releasePointerCapture(e.pointerId);
+    handle.removeEventListener("pointermove", onPointerMove);
+    handle.removeEventListener("pointerup", onPointerUp);
+    handle.removeEventListener("pointercancel", onPointerUp);
+
+    row.classList.remove("dragging");
+    listEl.classList.remove("dragging-active");
+    rowsSnapshot.forEach(r => { r.style.transform = ""; });
+
+    if(targetIndex !== draggedIndex){
+      const [moved] = targetList.splice(draggedIndex, 1);
+      targetList.splice(targetIndex, 0, moved);
+      saveState();
+      buildList();
+    }
+  }
+
+  handle.addEventListener("pointerdown", onPointerDown);
 }
 
 // Updates every input's displayed value from the current baseValue,
