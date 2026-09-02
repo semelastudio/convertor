@@ -10,8 +10,26 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Convertor">
+<script>
+(function(){
+  try{
+    var saved = localStorage.getItem("convertor-theme");
+    var theme = (saved === "light" || saved === "dark")
+      ? saved
+      : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if(meta) meta.setAttribute("content", theme === "dark" ? "#0F1830" : "#16233D");
+  }catch(e){
+    document.documentElement.setAttribute("data-theme", "light");
+  }
+})();
+</script>
 <style>
   :root{
+    color-scheme: light dark;
+  }
+  [data-theme="light"]{
     --ink:#16233D;
     --ink-soft:#2B3A57;
     --paper:#EEF1F5;
@@ -21,6 +39,19 @@
     --line:#D8DEE7;
     --muted:#6B7686;
     --danger:#B14B3F;
+    --danger-bg:#F3E7E4;
+  }
+  [data-theme="dark"]{
+    --ink:#EDEFF3;
+    --ink-soft:#C7CEDC;
+    --paper:#0F1830;
+    --card:#182545;
+    --gold:#D9A44E;
+    --teal:#4FA694;
+    --line:#2B3A57;
+    --muted:#8993A8;
+    --danger:#E28A7D;
+    --danger-bg:#3A2530;
   }
   *{box-sizing:border-box;}
   html,body{height:100%;}
@@ -32,9 +63,10 @@
     display:flex;
     align-items:flex-start;
     justify-content:center;
-    padding:24px 20px 60px;
+    padding:calc(24px + env(safe-area-inset-top)) 20px calc(40px + env(safe-area-inset-bottom));
     -webkit-font-smoothing:antialiased;
     min-height:100%;
+    transition:background 0.2s ease, color 0.2s ease;
   }
   .app{
     width:100%;
@@ -215,7 +247,7 @@
     line-height:1;
     transition:background 0.15s ease, color 0.15s ease;
   }
-  .remove-btn:hover{ background:#F3E7E4; color:var(--danger); }
+  .remove-btn:hover{ background:var(--danger-bg); color:var(--danger); }
 
   .add-row{
     margin-top:14px;
@@ -309,6 +341,48 @@
     padding:0 8px;
   }
   .status.error{ color:var(--danger); }
+
+  .theme-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    margin-top:26px;
+  }
+  .theme-label{
+    font-size:13px;
+    color:var(--muted);
+    font-weight:600;
+  }
+  .theme-switch{
+    width:46px;
+    height:26px;
+    border-radius:999px;
+    border:none;
+    background:var(--line);
+    position:relative;
+    cursor:pointer;
+    padding:0;
+    flex-shrink:0;
+    transition:background 0.2s ease;
+  }
+  .theme-switch .knob{
+    position:absolute;
+    top:3px;
+    left:3px;
+    width:20px;
+    height:20px;
+    border-radius:50%;
+    background:#fff;
+    box-shadow:0 1px 3px rgba(0,0,0,0.3);
+    transition:transform 0.2s ease;
+  }
+  .theme-switch[aria-checked="true"]{
+    background:var(--gold);
+  }
+  .theme-switch[aria-checked="true"] .knob{
+    transform:translateX(20px);
+  }
 </style>
 </head>
 <body>
@@ -341,9 +415,48 @@
   </div>
 
   <div class="status" id="statusLine"></div>
+
+  <div class="theme-row">
+    <span class="theme-label">Dark mode</span>
+    <button class="theme-switch" id="themeSwitch" role="switch" aria-checked="false" aria-label="Toggle dark mode">
+      <span class="knob"></span>
+    </button>
+  </div>
 </div>
 
 <script>
+const THEME_KEY = "convertor-theme";
+const themeSwitch = document.getElementById("themeSwitch");
+const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+
+function applyTheme(theme){
+  document.documentElement.setAttribute("data-theme", theme);
+  themeSwitch.setAttribute("aria-checked", theme === "dark" ? "true" : "false");
+  if(themeColorMeta){
+    themeColorMeta.setAttribute("content", theme === "dark" ? "#0F1830" : "#16233D");
+  }
+}
+
+// Reflect whatever the inline head script already set (avoids a flash),
+// then keep the switch UI in sync with it.
+applyTheme(document.documentElement.getAttribute("data-theme") || "light");
+
+themeSwitch.addEventListener("click", () => {
+  const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+  localStorage.setItem(THEME_KEY, next);
+  applyTheme(next);
+});
+
+// If the person hasn't manually chosen a theme, keep following the system
+// setting live (e.g. switching at sunset).
+if(window.matchMedia){
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
+    if(!localStorage.getItem(THEME_KEY)){
+      applyTheme(e.matches ? "dark" : "light");
+    }
+  });
+}
+
 const CURRENCY_NAMES = {
   AED:"UAE Dirham", AFN:"Afghan Afghani", ALL:"Albanian Lek", AMD:"Armenian Dram",
   ANG:"Netherlands Antillean Guilder", AOA:"Angolan Kwanza", ARS:"Argentine Peso",

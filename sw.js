@@ -1,4 +1,4 @@
-const CACHE_NAME = "convertor-app-v2";
+const CACHE_NAME = "convertor-app-v3";
 const ASSETS = [
   "./",
   "./index.html",
