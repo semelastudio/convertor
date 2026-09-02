@@ -1,4 +1,4 @@
-const CACHE_NAME = "convertor-app-v3";
+const CACHE_NAME = "convertor-app-v4";
 const ASSETS = [
   "./",
   "./index.html",
@@ -31,6 +31,23 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Network-first for the page shell itself, so a fresh deploy shows up
+  // immediately instead of the old cached page lingering after updates.
+  const isPageRequest = event.request.mode === "navigate" || url.pathname.endsWith("index.html");
+  if (isPageRequest) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Cache-first for static assets (icons, manifest) — these rarely change.
   event.respondWith(
     caches.match(event.request).then((cached) => {
       return (
