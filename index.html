@@ -3,13 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Convertor</title>
-<meta name="theme-color" content="#16233D">
+<title>QuickConvertor</title>
+<meta name="theme-color" content="#EEEEEE">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" id="appIcon" type="image/png" href="icon/Icon-192.png">
+<link rel="apple-touch-icon" id="appleIcon" href="icon/Icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Convertor">
+<meta name="apple-mobile-web-app-title" content="QuickConvertor">
 <script>
 (function(){
   try{
@@ -19,7 +23,12 @@
       : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
     document.documentElement.setAttribute("data-theme", theme);
     var meta = document.querySelector('meta[name="theme-color"]');
-    if(meta) meta.setAttribute("content", theme === "dark" ? "#0F1830" : "#16233D");
+    if(meta) meta.setAttribute("content", theme === "dark" ? "#1A1A1A" : "#EEEEEE");
+    var iconPath = theme === "dark" ? "icon/Icon-192-dark.png" : "icon/Icon-192.png";
+    var appIcon = document.getElementById("appIcon");
+    var appleIcon = document.getElementById("appleIcon");
+    if(appIcon) appIcon.setAttribute("href", iconPath);
+    if(appleIcon) appleIcon.setAttribute("href", iconPath);
   }catch(e){
     document.documentElement.setAttribute("data-theme", "light");
   }
@@ -29,29 +38,31 @@
   :root{
     color-scheme: light dark;
   }
+  /* Only the page background, header text, and the dashed add-currency
+     button change with theme. Cards (base card, rows, settings panel)
+     stay light with fixed navy ink, by design. */
   [data-theme="light"]{
-    --ink:#16233D;
-    --ink-soft:#2B3A57;
-    --paper:#EEF1F5;
-    --card:#FFFFFF;
-    --gold:#C98A2C;
-    --teal:#2E6E62;
-    --line:#D8DEE7;
-    --muted:#6B7686;
-    --danger:#B14B3F;
-    --danger-bg:#F3E7E4;
+    --paper:#EEEEEE;
+    --page-ink:#1A1A1A;
+    --page-muted:#8A8A8A;
+    --dash-border:#B7B7B7;
   }
   [data-theme="dark"]{
-    --ink:#EDEFF3;
-    --ink-soft:#C7CEDC;
-    --paper:#0F1830;
-    --card:#182545;
-    --gold:#D9A44E;
-    --teal:#4FA694;
-    --line:#2B3A57;
-    --muted:#8993A8;
-    --danger:#E28A7D;
-    --danger-bg:#3A2530;
+    --paper:#1A1A1A;
+    --page-ink:#F2F2F2;
+    --page-muted:#9A9A9A;
+    --dash-border:#5A5A5A;
+  }
+  :root{
+    --card:#FFFFFF;
+    --ink:#16233D;
+    --muted:#8A8A8A;
+    --accent:#FF3B00;
+    --line:#E4E4E4;
+    --toggle-track-off:#EEEEEE;
+    --toggle-knob-off:#8D8D8D;
+    --toggle-track-on:#FFC4B2;
+    --toggle-knob-on:#FF3B00;
   }
   *{box-sizing:border-box;}
   html,body{height:100%;}
@@ -59,11 +70,11 @@
     margin:0;
     background:var(--paper);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    color:var(--ink);
+    color:var(--page-ink);
     display:flex;
     align-items:flex-start;
     justify-content:center;
-    padding:calc(24px + env(safe-area-inset-top)) 20px calc(40px + env(safe-area-inset-bottom));
+    padding:calc(24px + env(safe-area-inset-top)) 20px 0;
     -webkit-font-smoothing:antialiased;
     min-height:100%;
     transition:background 0.2s ease, color 0.2s ease;
@@ -71,78 +82,93 @@
   .app{
     width:100%;
     max-width:400px;
-  }
-  .masthead{
-    display:flex;
-    align-items:baseline;
-    justify-content:space-between;
-    margin-bottom:14px;
-    padding:0 4px;
-  }
-  .masthead h1{
-    font-size:15px;
-    font-weight:600;
-    letter-spacing:0.01em;
-    margin:0;
-  }
-  .masthead .updated{
-    font-size:12px;
-    color:var(--muted);
-    font-variant-numeric:tabular-nums;
+    position:relative;
   }
 
+  /* ---------- Header ---------- */
+  .masthead{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    margin-bottom:16px;
+    padding:0 2px;
+  }
+  .masthead h1{
+    font-size:22px;
+    font-weight:800;
+    letter-spacing:-0.01em;
+    margin:0 0 2px;
+    color:var(--page-ink);
+  }
+  .masthead h1 .light{
+    font-weight:400;
+  }
+  .masthead .updated{
+    font-size:12.5px;
+    color:var(--page-muted);
+    font-family:"DM Mono",monospace;
+    font-variant-numeric:tabular-nums;
+  }
+  .icon-btn{
+    border:none;
+    background:transparent;
+    color:var(--page-ink);
+    cursor:pointer;
+    padding:6px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+  }
+
+  /* ---------- Base amount card ---------- */
   .base-card{
     background:var(--card);
-    border-radius:20px;
-    padding:18px 20px;
-    box-shadow:0 1px 2px rgba(22,35,61,0.06), 0 12px 28px rgba(22,35,61,0.08);
-    border:1px solid var(--line);
+    border-radius:24px;
+    padding:20px 22px;
     margin-bottom:14px;
   }
   .base-row{
     display:flex;
     flex-direction:column;
-    gap:10px;
+    gap:8px;
   }
   .base-select-line{
     display:flex;
     align-items:center;
-  }
-  .select-wrap{
     position:relative;
-    flex-shrink:0;
-  }
-  .select-wrap::after{
-    content:"";
-    position:absolute;
-    right:2px;
-    top:9px;
-    width:7px;
-    height:7px;
-    border-right:1.5px solid var(--muted);
-    border-bottom:1.5px solid var(--muted);
-    transform:rotate(45deg);
-    pointer-events:none;
   }
   .ccy-select{
     background:transparent;
     border:none;
-    font-size:16px;
+    font-size:19px;
     font-weight:700;
-    letter-spacing:0.02em;
-    color:var(--ink-soft);
-    padding:2px 16px 4px 0;
+    letter-spacing:-0.005em;
+    color:var(--ink);
+    padding:2px 22px 4px 0;
     cursor:pointer;
     -webkit-appearance:none;
     appearance:none;
     max-width:100%;
   }
+  .chevron{
+    position:absolute;
+    right:2px;
+    top:50%;
+    transform:translateY(-50%);
+    width:11px;
+    height:11px;
+    pointer-events:none;
+    color:var(--ink);
+    opacity:0.55;
+  }
   .base-amount{
     width:100%;
     border:none;
     background:transparent;
-    font-size:34px;
-    font-weight:600;
+    font-size:38px;
+    font-family:"DM Mono",monospace;
+    font-weight:700;
     color:var(--ink);
     font-variant-numeric:tabular-nums;
     padding:0;
@@ -151,37 +177,36 @@
   }
   .base-amount:focus{outline:none;}
 
+  /* ---------- Currency rows ---------- */
   .list{
     display:flex;
     flex-direction:column;
-    gap:10px;
+    gap:12px;
   }
   .ccy-row{
-    background:var(--card);
-    border-radius:16px;
-    padding:12px 14px 12px 10px;
-    border:1px solid var(--line);
+    border-radius:22px;
+    padding:14px 16px 14px 10px;
     display:flex;
     align-items:center;
-    gap:10px;
+    gap:8px;
   }
   .ccy-row.dragging{
     position:relative;
     z-index:30;
-    box-shadow:0 10px 24px rgba(22,35,61,0.20);
-    border-color:var(--gold);
+    box-shadow:0 12px 26px rgba(0,0,0,0.22);
   }
   .list.dragging-active .ccy-row:not(.dragging){
     transition:transform 150ms ease;
   }
   .drag-handle{
-    width:22px;
+    width:20px;
     height:34px;
     flex-shrink:0;
     display:flex;
     align-items:center;
     justify-content:center;
-    color:var(--muted);
+    color:var(--ink);
+    opacity:0.55;
     touch-action:none;
     cursor:grab;
     -webkit-user-select:none;
@@ -189,7 +214,7 @@
     -webkit-touch-callout:none;
   }
   .drag-handle svg circle{ fill:currentColor; }
-  .ccy-row.dragging .drag-handle{ cursor:grabbing; color:var(--gold); }
+  .ccy-row.dragging .drag-handle{ cursor:grabbing; opacity:0.9; }
   .ccy-row .info{
     flex:1;
     min-width:0;
@@ -200,22 +225,25 @@
     gap:6px;
   }
   .ccy-row .code{
-    font-size:13px;
-    font-weight:700;
-    letter-spacing:0.03em;
-    color:var(--ink-soft);
+    font-size:14px;
+    font-weight:800;
+    letter-spacing:0.01em;
+    color:var(--ink);
   }
   .ccy-row .name{
-    font-size:12px;
-    color:var(--muted);
+    font-size:13px;
+    color:var(--ink);
+    opacity:0.65;
     overflow:hidden;
     text-overflow:ellipsis;
     white-space:nowrap;
   }
   .ccy-row .sub{
-    font-size:11px;
-    color:var(--muted);
+    font-size:12px;
+    color:var(--ink);
+    opacity:0.6;
     margin-top:2px;
+    font-family:"DM Mono",monospace;
     font-variant-numeric:tabular-nums;
   }
   .row-amount{
@@ -223,8 +251,9 @@
     flex-shrink:0;
     border:none;
     background:transparent;
-    font-size:19px;
-    font-weight:600;
+    font-size:20px;
+    font-family:"DM Mono",monospace;
+    font-weight:800;
     color:var(--ink);
     font-variant-numeric:tabular-nums;
     padding:0;
@@ -237,7 +266,8 @@
     border-radius:50%;
     border:none;
     background:transparent;
-    color:var(--muted);
+    color:var(--ink);
+    opacity:0.6;
     display:flex;
     align-items:center;
     justify-content:center;
@@ -245,30 +275,31 @@
     flex-shrink:0;
     font-size:17px;
     line-height:1;
-    transition:background 0.15s ease, color 0.15s ease;
+    transition:opacity 0.15s ease;
   }
-  .remove-btn:hover{ background:var(--danger-bg); color:var(--danger); }
+  .remove-btn:hover{ opacity:1; }
 
+  /* ---------- Add currency ---------- */
   .add-row{
     margin-top:14px;
   }
   .add-btn{
     width:100%;
-    padding:13px 14px;
-    border-radius:16px;
-    border:1.5px dashed var(--line);
+    padding:15px 14px;
+    border-radius:22px;
+    border:2px dashed var(--dash-border);
     background:transparent;
-    color:var(--muted);
-    font-size:13.5px;
-    font-weight:600;
+    color:var(--page-ink);
+    font-size:14.5px;
+    font-weight:700;
     cursor:pointer;
     display:flex;
     align-items:center;
     justify-content:center;
     gap:8px;
-    transition:border-color 0.15s ease, color 0.15s ease;
+    transition:border-color 0.15s ease, opacity 0.15s ease;
   }
-  .add-btn:hover{ border-color:var(--gold); color:var(--gold); }
+  .add-btn:hover{ border-color:var(--accent); }
   .add-btn .plus{
     font-size:16px;
     font-weight:400;
@@ -283,8 +314,8 @@
   .add-picker.open{ display:flex; }
   .search-input{
     width:100%;
-    padding:12px 14px;
-    border-radius:12px;
+    padding:13px 15px;
+    border-radius:16px;
     border:1px solid var(--line);
     background:var(--card);
     font-size:16px;
@@ -292,12 +323,12 @@
   }
   .search-input:focus{
     outline:none;
-    border-color:var(--gold);
+    border-color:var(--accent);
   }
   .search-results{
     max-height:240px;
     overflow-y:auto;
-    border-radius:14px;
+    border-radius:16px;
     border:1px solid var(--line);
     background:var(--card);
   }
@@ -305,17 +336,17 @@
     display:flex;
     align-items:baseline;
     gap:8px;
-    padding:11px 14px;
+    padding:12px 15px;
     cursor:pointer;
     border-bottom:1px solid var(--line);
   }
   .search-item:last-child{ border-bottom:none; }
   .search-item:hover{ background:var(--paper); }
   .search-item .code{
-    font-size:13px;
-    font-weight:700;
-    letter-spacing:0.03em;
-    color:var(--ink-soft);
+    font-size:13.5px;
+    font-weight:800;
+    letter-spacing:0.02em;
+    color:var(--ink);
     flex-shrink:0;
   }
   .search-item .name{
@@ -335,53 +366,93 @@
   .status{
     text-align:center;
     font-size:11.5px;
-    color:var(--muted);
+    color:var(--page-muted);
     margin-top:16px;
     min-height:14px;
     padding:0 8px;
   }
-  .status.error{ color:var(--danger); }
+  .status.error{ color:var(--accent); }
 
-  .settings-section{
-    margin-top:26px;
-    padding-top:18px;
-    border-top:1px solid var(--line);
+  /* ---------- Settings overlay ---------- */
+  .settings-overlay{
+    position:fixed;
+    inset:0;
+    background:var(--paper);
+    z-index:100;
+    padding:calc(24px + env(safe-area-inset-top)) 20px 0;
+    display:flex;
+    justify-content:center;
+    visibility:hidden;
+    transition:visibility 0s linear 0.25s;
+    pointer-events:none;
+  }
+  .settings-overlay.open{
+    visibility:visible;
+    transition-delay:0s;
+    pointer-events:auto;
+  }
+  .settings-inner{
+    width:100%;
+    max-width:400px;
+    height:100%;
+  }
+  .settings-card{
+    background:var(--card);
+    border-radius:24px 24px 0 0;
+    padding:22px 20px;
+    height:100%;
+    box-shadow:0 1px 2px rgba(22,35,61,0.05), 0 10px 24px rgba(22,35,61,0.07);
+    transform:translateY(100%);
+    transition:transform 0.25s ease;
+    will-change:transform;
+    backface-visibility:hidden;
+  }
+  .settings-overlay.open .settings-card{
+    transform:translateY(0);
+  }
+  .settings-group + .settings-group{
+    margin-top:22px;
   }
   .settings-title{
-    font-size:12px;
+    font-size:11.5px;
     font-weight:700;
-    letter-spacing:0.06em;
+    letter-spacing:0.07em;
     text-transform:uppercase;
     color:var(--muted);
-    margin-bottom:12px;
+    margin-bottom:10px;
     padding:0 2px;
   }
   .settings-row{
     display:flex;
     align-items:center;
     justify-content:space-between;
-    padding:10px 2px;
+    padding:12px 2px;
   }
-  .theme-label{
-    font-size:14px;
+  .settings-row .row-label{
+    font-size:16px;
     color:var(--ink);
-    font-weight:600;
+    font-weight:700;
+  }
+  .settings-row .row-value{
+    font-size:14px;
+    color:var(--muted);
+  }
+  .settings-row .row-value.numeric{
+    font-family:"DM Mono",monospace;
   }
   .settings-link{
-    font-size:14px;
-    color:var(--teal);
-    font-weight:600;
-    text-decoration:none;
+    font-size:14.5px;
+    color:var(--accent);
+    font-weight:700;
+    text-decoration:underline;
   }
-  .settings-link:active{
-    opacity:0.7;
-  }
+  .settings-link:active{ opacity:0.7; }
   .theme-switch{
-    width:46px;
-    height:26px;
+    width:48px;
+    height:28px;
     border-radius:999px;
     border:none;
-    background:var(--line);
+    background:var(--toggle-track-off);
     position:relative;
     cursor:pointer;
     padding:0;
@@ -392,18 +463,18 @@
     position:absolute;
     top:3px;
     left:3px;
-    width:20px;
-    height:20px;
+    width:22px;
+    height:22px;
     border-radius:50%;
-    background:#fff;
-    box-shadow:0 1px 3px rgba(0,0,0,0.3);
-    transition:transform 0.2s ease;
+    background:var(--toggle-knob-off);
+    transition:transform 0.2s ease, background 0.2s ease;
   }
   .theme-switch[aria-checked="true"]{
-    background:var(--gold);
+    background:var(--toggle-track-on);
   }
   .theme-switch[aria-checked="true"] .knob{
     transform:translateX(20px);
+    background:var(--toggle-knob-on);
   }
 </style>
 </head>
@@ -411,16 +482,26 @@
 
 <div class="app">
   <div class="masthead">
-    <h1>Convertor</h1>
-    <span class="updated" id="updatedLabel">—</span>
+    <div>
+      <h1>Quick<span class="light">Convertor</span></h1>
+      <span class="updated" id="updatedLabel">—</span>
+    </div>
+    <button class="icon-btn" id="menuBtn" aria-label="Open settings">
+      <svg width="22" height="16" viewBox="0 0 22 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="0" y1="1" x2="22" y2="1"/>
+        <line x1="0" y1="8" x2="22" y2="8"/>
+        <line x1="0" y1="15" x2="22" y2="15"/>
+      </svg>
+    </button>
   </div>
 
   <div class="base-card">
     <div class="base-row">
       <div class="base-select-line">
-        <div class="select-wrap">
-          <select class="ccy-select" id="baseCcy" aria-label="Base currency"></select>
-        </div>
+        <select class="ccy-select" id="baseCcy" aria-label="Base currency"></select>
+        <svg class="chevron" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 1.5L6 6.5L11 1.5"/>
+        </svg>
       </div>
       <input class="base-amount" id="baseAmount" inputmode="decimal" type="text" value="1" aria-label="Amount">
     </div>
@@ -437,17 +518,49 @@
   </div>
 
   <div class="status" id="statusLine"></div>
+</div>
 
-  <div class="settings-section">
-    <div class="settings-title">Settings</div>
-    <div class="settings-row">
-      <span class="theme-label">Dark mode</span>
-      <button class="theme-switch" id="themeSwitch" role="switch" aria-checked="false" aria-label="Toggle dark mode">
-        <span class="knob"></span>
+<div class="settings-overlay" id="settingsOverlay">
+  <div class="settings-inner">
+    <div class="masthead">
+      <div>
+        <h1>Quick<span class="light">Convertor</span></h1>
+        <span class="updated" id="updatedLabelSettings">—</span>
+      </div>
+      <button class="icon-btn" id="closeMenuBtn" aria-label="Close settings">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="1" y1="1" x2="17" y2="17"/>
+          <line x1="17" y1="1" x2="1" y2="17"/>
+        </svg>
       </button>
     </div>
-    <div class="settings-row">
-      <a href="#" class="settings-link" id="refreshLink">Refresh page</a>
+
+    <div class="settings-card">
+      <div class="settings-group">
+        <div class="settings-title">Settings</div>
+        <div class="settings-row">
+          <span class="row-label">Dark mode</span>
+          <button class="theme-switch" id="themeSwitch" role="switch" aria-checked="false" aria-label="Toggle dark mode">
+            <span class="knob"></span>
+          </button>
+        </div>
+        <div class="settings-row">
+          <span class="row-label">Refresh</span>
+          <a href="#" class="settings-link" id="refreshLink">Refresh</a>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-title">About</div>
+        <div class="settings-row">
+          <span class="row-label">Version</span>
+          <span class="row-value numeric">v0.1 Alpha</span>
+        </div>
+        <div class="settings-row">
+          <span class="row-label">Developer</span>
+          <span class="row-value">Semela Studio</span>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -457,6 +570,9 @@ const THEME_KEY = "convertor-theme";
 const themeSwitch = document.getElementById("themeSwitch");
 const themeColorMeta = document.querySelector('meta[name="theme-color"]');
 const refreshLink = document.getElementById("refreshLink");
+const menuBtn = document.getElementById("menuBtn");
+const closeMenuBtn = document.getElementById("closeMenuBtn");
+const settingsOverlay = document.getElementById("settingsOverlay");
 
 function systemPrefersDark(){
   return !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -465,13 +581,16 @@ function systemPrefersDark(){
 function applyTheme(theme){
   document.documentElement.setAttribute("data-theme", theme);
   themeSwitch.setAttribute("aria-checked", theme === "dark" ? "true" : "false");
+  const iconPath = theme === "dark" ? "icon/Icon-192-dark.png" : "icon/Icon-192.png";
+  const appIcon = document.getElementById("appIcon");
+  const appleIcon = document.getElementById("appleIcon");
+  if(appIcon) appIcon.setAttribute("href", iconPath);
+  if(appleIcon) appleIcon.setAttribute("href", iconPath);
   if(themeColorMeta){
-    themeColorMeta.setAttribute("content", theme === "dark" ? "#0F1830" : "#16233D");
+    themeColorMeta.setAttribute("content", theme === "dark" ? "#1A1A1A" : "#EEEEEE");
   }
 }
 
-// Reflect whatever the inline head script already set (avoids a flash),
-// then keep the switch UI in sync with it.
 applyTheme(document.documentElement.getAttribute("data-theme") || "light");
 
 themeSwitch.addEventListener("click", () => {
@@ -480,8 +599,6 @@ themeSwitch.addEventListener("click", () => {
   applyTheme(next);
 });
 
-// If the person hasn't manually chosen a theme, keep following the system
-// setting live (e.g. switching at sunset).
 if(window.matchMedia){
   const mq = window.matchMedia("(prefers-color-scheme: dark)");
   const handleSystemChange = (e) => {
@@ -492,13 +609,10 @@ if(window.matchMedia){
   if(mq.addEventListener){
     mq.addEventListener("change", handleSystemChange);
   }else if(mq.addListener){
-    // Safari <14 fallback
     mq.addListener(handleSystemChange);
   }
 }
 
-// iOS can suspend a standalone PWA's JS while it's backgrounded, so also
-// re-check the system setting whenever the app becomes visible again.
 document.addEventListener("visibilitychange", () => {
   if(document.visibilityState === "visible" && !localStorage.getItem(THEME_KEY)){
     applyTheme(systemPrefersDark() ? "dark" : "light");
@@ -516,6 +630,13 @@ if(refreshLink){
     window.location.reload();
   });
 }
+
+menuBtn.addEventListener("click", () => {
+  settingsOverlay.classList.add("open");
+});
+closeMenuBtn.addEventListener("click", () => {
+  settingsOverlay.classList.remove("open");
+});
 
 const CURRENCY_NAMES = {
   AED:"UAE Dirham", AFN:"Afghan Afghani", ALL:"Albanian Lek", AMD:"Armenian Dram",
@@ -564,10 +685,15 @@ const STORAGE_KEY = "rate-app-state-v3";
 const DEFAULT_BASE = "USD";
 const DEFAULT_LIST = ["EUR","GBP","NZD"];
 
+// Row background colors, cycling per position — matches the design's
+// rotating palette (yellow, pink, teal, lime, mauve).
+const ROW_COLORS = ["#FFCF3C", "#FFB7F4", "#A8D8DA", "#C7D96B", "#C2B1B1"];
+
 const baseCcy = document.getElementById("baseCcy");
 const baseAmount = document.getElementById("baseAmount");
 const listEl = document.getElementById("list");
 const updatedLabel = document.getElementById("updatedLabel");
+const updatedLabelSettings = document.getElementById("updatedLabelSettings");
 const statusLine = document.getElementById("statusLine");
 const addBtn = document.getElementById("addBtn");
 const addPicker = document.getElementById("addPicker");
@@ -657,8 +783,10 @@ async function addCurrency(code){
 function updateLabels(){
   if(lastUpdated){
     const d = new Date(lastUpdated);
-    updatedLabel.textContent = d.toLocaleDateString(undefined,{month:"short",day:"numeric"}) +
+    const text = "Updated: " + d.toLocaleDateString(undefined,{month:"short",day:"numeric"}) +
       " " + d.toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit"});
+    updatedLabel.textContent = text;
+    updatedLabelSettings.textContent = text;
   }
 }
 
@@ -678,8 +806,8 @@ function autosize(el, maxSize, minSize){
   }
   el.style.fontSize = size + "px";
 }
-function autosizeBase(){ autosize(baseAmount, 34, 18); }
-function autosizeRow(input){ autosize(input, 19, 16); }
+function autosizeBase(){ autosize(baseAmount, 38, 20); }
+function autosizeRow(input){ autosize(input, 20, 16); }
 
 async function fetchRates(){
   try{
@@ -714,11 +842,12 @@ async function fetchRates(){
 function buildList(){
   listEl.innerHTML = "";
 
-  targetList.forEach(code => {
+  targetList.forEach((code, index) => {
     const rate = rates ? rates[code] : null;
     const row = document.createElement("div");
     row.className = "ccy-row";
     row.dataset.code = code;
+    row.style.background = ROW_COLORS[index % ROW_COLORS.length];
 
     const rateText = rate != null ? `1 ${base} = ${rate.toFixed(4)} ${code}` : "rate unavailable";
     const value = rate != null ? fmt(baseValue * rate) : "";
@@ -784,7 +913,7 @@ function bindDragHandle(row){
     draggedIndex = rowsSnapshot.indexOf(row);
     targetIndex = draggedIndex;
     const tops = rowsSnapshot.map(r => r.getBoundingClientRect().top);
-    pitch = rowsSnapshot.length > 1 ? (tops[1] - tops[0]) : (row.offsetHeight + 10);
+    pitch = rowsSnapshot.length > 1 ? (tops[1] - tops[0]) : (row.offsetHeight + 12);
     listEl.classList.add("dragging-active");
     row.classList.add("dragging");
     handle.setPointerCapture(e.pointerId);
