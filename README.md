@@ -5,7 +5,7 @@ A simple, fast currency converter that installs to your home screen and keeps wo
 Type an amount in any currency and every other row updates live. Rates come from a free public
 feed, are cached locally, and the whole app runs from that cache when there is no connection.
 
-**Status:** v0.1 Alpha · by Semela Studio
+**Status:✱ v0.1.1 · by Semela Studio
 
 ---
 
