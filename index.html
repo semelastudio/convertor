@@ -4,43 +4,87 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>QuickConvertor</title>
+<meta name="description" content="A simple, fast, offline-capable currency converter.">
 <meta name="theme-color" content="#EEEEEE">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" id="appIcon" type="image/png" href="icon/Icon-192.png">
 <link rel="apple-touch-icon" id="appleIcon" href="icon/Icon-192.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="QuickConvertor">
+
+<!-- Google Fonts is a third-party, render-blocking request. Preconnect warms
+     the TCP/TLS handshake, and loading the stylesheet as media="print" then
+     flipping it to "all" on load makes it non-blocking: the UI paints in the
+     system font immediately and swaps to DM Mono when it arrives. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap">
+</noscript>
+
 <script>
+/* ------------------------------------------------------------------
+   Theme bootstrap — must stay inline and run before first paint.
+
+   Anything async here would show a flash of the wrong background on
+   launch. It only sets the data-theme attribute plus the theme-dependent
+   icons/status bar colour; all real theme logic lives in the main script.
+   ------------------------------------------------------------------ */
 (function(){
   try{
     var saved = localStorage.getItem("convertor-theme");
+    // An explicit user choice always wins; otherwise follow the OS setting.
     var theme = (saved === "light" || saved === "dark")
       ? saved
       : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
     document.documentElement.setAttribute("data-theme", theme);
+
+    var isDark = theme === "dark";
     var meta = document.querySelector('meta[name="theme-color"]');
-    if(meta) meta.setAttribute("content", theme === "dark" ? "#1A1A1A" : "#EEEEEE");
-    var iconPath = theme === "dark" ? "icon/Icon-192-dark.png" : "icon/Icon-192.png";
+    if(meta) meta.setAttribute("content", isDark ? "#1A1A1A" : "#EEEEEE");
+
+    var iconPath = isDark ? "icon/Icon-192-dark.png" : "icon/Icon-192.png";
     var appIcon = document.getElementById("appIcon");
     var appleIcon = document.getElementById("appleIcon");
     if(appIcon) appIcon.setAttribute("href", iconPath);
     if(appleIcon) appleIcon.setAttribute("href", iconPath);
   }catch(e){
+    // Private-mode Safari can throw on localStorage. Light is the safe default.
     document.documentElement.setAttribute("data-theme", "light");
   }
 })();
 </script>
+
 <style>
+  /* ==========================================================
+     Design tokens
+     Only the page background, header text and the dashed
+     add-currency button react to the theme. Cards (base card,
+     currency rows, settings panel) stay light with fixed navy
+     ink, by design.
+     ========================================================== */
   :root{
     color-scheme: light dark;
+
+    /* Theme-independent card palette */
+    --card:#FFFFFF;
+    --ink:#16233D;
+    --muted:#8A8A8A;
+    --accent:#FF3B00;
+    --line:#E4E4E4;
+    --toggle-track-off:#EEEEEE;
+    --toggle-knob-off:#8D8D8D;
+    --toggle-track-on:#FFC4B2;
+    --toggle-knob-on:#FF3B00;
+
+    /* Shared metrics, so row gap and radii are edited in one place */
+    --row-gap:12px;
+    --font-mono:"DM Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --font-ui:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
-  /* Only the page background, header text, and the dashed add-currency
-     button change with theme. Cards (base card, rows, settings panel)
-     stay light with fixed navy ink, by design. */
   [data-theme="light"]{
     --paper:#EEEEEE;
     --page-ink:#1A1A1A;
@@ -53,23 +97,16 @@
     --page-muted:#9A9A9A;
     --dash-border:#5A5A5A;
   }
-  :root{
-    --card:#FFFFFF;
-    --ink:#16233D;
-    --muted:#8A8A8A;
-    --accent:#FF3B00;
-    --line:#E4E4E4;
-    --toggle-track-off:#EEEEEE;
-    --toggle-knob-off:#8D8D8D;
-    --toggle-track-on:#FFC4B2;
-    --toggle-knob-on:#FF3B00;
-  }
+
+  /* ==========================================================
+     Base layout
+     ========================================================== */
   *{box-sizing:border-box;}
   html,body{height:100%;}
   body{
     margin:0;
     background:var(--paper);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-family:var(--font-ui);
     color:var(--page-ink);
     display:flex;
     align-items:flex-start;
@@ -84,6 +121,9 @@
     max-width:400px;
     position:relative;
   }
+  /* Buttons should react instantly to taps rather than waiting out the
+     300ms double-tap-to-zoom delay. */
+  button,.settings-link,.search-item{touch-action:manipulation;}
 
   /* ---------- Header ---------- */
   .masthead{
@@ -106,7 +146,7 @@
   .masthead .updated{
     font-size:12.5px;
     color:var(--page-muted);
-    font-family:"DM Mono",monospace;
+    font-family:var(--font-mono);
     font-variant-numeric:tabular-nums;
   }
   .icon-btn{
@@ -158,7 +198,7 @@
     transform:translateY(-50%);
     width:11px;
     height:11px;
-    pointer-events:none;
+    pointer-events:none;   /* clicks fall through to the select underneath */
     color:var(--ink);
     opacity:0.55;
   }
@@ -167,7 +207,7 @@
     border:none;
     background:transparent;
     font-size:38px;
-    font-family:"DM Mono",monospace;
+    font-family:var(--font-mono);
     font-weight:700;
     color:var(--ink);
     font-variant-numeric:tabular-nums;
@@ -181,7 +221,7 @@
   .list{
     display:flex;
     flex-direction:column;
-    gap:12px;
+    gap:var(--row-gap);
   }
   .ccy-row{
     border-radius:22px;
@@ -190,10 +230,14 @@
     align-items:center;
     gap:8px;
   }
+  /* The row under the finger lifts above its neighbours while dragging.
+     will-change is scoped to this state so idle rows keep no extra
+     compositor layers. */
   .ccy-row.dragging{
     position:relative;
     z-index:30;
     box-shadow:0 12px 26px rgba(0,0,0,0.22);
+    will-change:transform;
   }
   .list.dragging-active .ccy-row:not(.dragging){
     transition:transform 150ms ease;
@@ -207,7 +251,7 @@
     justify-content:center;
     color:var(--ink);
     opacity:0.55;
-    touch-action:none;
+    touch-action:none;         /* stops the browser scrolling mid-drag */
     cursor:grab;
     -webkit-user-select:none;
     user-select:none;
@@ -217,7 +261,7 @@
   .ccy-row.dragging .drag-handle{ cursor:grabbing; opacity:0.9; }
   .ccy-row .info{
     flex:1;
-    min-width:0;
+    min-width:0;               /* lets the name ellipsis instead of pushing */
   }
   .ccy-row .code-line{
     display:flex;
@@ -243,7 +287,7 @@
     color:var(--ink);
     opacity:0.6;
     margin-top:2px;
-    font-family:"DM Mono",monospace;
+    font-family:var(--font-mono);
     font-variant-numeric:tabular-nums;
   }
   .row-amount{
@@ -252,7 +296,7 @@
     border:none;
     background:transparent;
     font-size:20px;
-    font-family:"DM Mono",monospace;
+    font-family:var(--font-mono);
     font-weight:800;
     color:var(--ink);
     font-variant-numeric:tabular-nums;
@@ -318,7 +362,7 @@
     border-radius:16px;
     border:1px solid var(--line);
     background:var(--card);
-    font-size:16px;
+    font-size:16px;            /* 16px keeps iOS from zooming on focus */
     color:var(--ink);
   }
   .search-input:focus{
@@ -328,6 +372,8 @@
   .search-results{
     max-height:240px;
     overflow-y:auto;
+    overscroll-behavior:contain;  /* scrolling the list won't drag the page */
+    -webkit-overflow-scrolling:touch;
     border-radius:16px;
     border:1px solid var(--line);
     background:var(--card);
@@ -363,17 +409,21 @@
     color:var(--muted);
   }
 
+  /* ---------- Status line ---------- */
   .status{
     text-align:center;
     font-size:11.5px;
     color:var(--page-muted);
     margin-top:16px;
-    min-height:14px;
+    min-height:14px;           /* reserved height stops layout shift */
     padding:0 8px;
   }
   .status.error{ color:var(--accent); }
 
   /* ---------- Settings overlay ---------- */
+  /* Kept in the DOM and hidden with visibility so the slide-up transition
+     can run. The delayed visibility transition lets the card finish sliding
+     out before the layer disappears. */
   .settings-overlay{
     position:fixed;
     inset:0;
@@ -438,15 +488,17 @@
     color:var(--muted);
   }
   .settings-row .row-value.numeric{
-    font-family:"DM Mono",monospace;
+    font-family:var(--font-mono);
   }
   .settings-link{
     font-size:14.5px;
     color:var(--accent);
     font-weight:700;
     text-decoration:underline;
+    cursor:pointer;
   }
   .settings-link:active{ opacity:0.7; }
+  .settings-link[aria-disabled="true"]{ opacity:0.5; pointer-events:none; }
   .theme-switch{
     width:48px;
     height:28px;
@@ -476,6 +528,15 @@
     transform:translateX(20px);
     background:var(--toggle-knob-on);
   }
+
+  /* Respect the OS "reduce motion" setting: keep every state change, drop
+     the animation between states. */
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{
+      animation-duration:0.01ms !important;
+      transition-duration:0.01ms !important;
+    }
+  }
 </style>
 </head>
 <body>
@@ -486,8 +547,8 @@
       <h1>Quick<span class="light">Convertor</span></h1>
       <span class="updated" id="updatedLabel">—</span>
     </div>
-    <button class="icon-btn" id="menuBtn" aria-label="Open settings">
-      <svg width="22" height="16" viewBox="0 0 22 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+    <button class="icon-btn" id="menuBtn" aria-label="Open settings" aria-expanded="false" aria-controls="settingsOverlay">
+      <svg width="22" height="16" viewBox="0 0 22 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
         <line x1="0" y1="1" x2="22" y2="1"/>
         <line x1="0" y1="8" x2="22" y2="8"/>
         <line x1="0" y1="15" x2="22" y2="15"/>
@@ -495,32 +556,37 @@
     </button>
   </div>
 
+  <!-- Base currency + the amount every row is derived from -->
   <div class="base-card">
     <div class="base-row">
       <div class="base-select-line">
         <select class="ccy-select" id="baseCcy" aria-label="Base currency"></select>
-        <svg class="chevron" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <svg class="chevron" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M1 1.5L6 6.5L11 1.5"/>
         </svg>
       </div>
-      <input class="base-amount" id="baseAmount" inputmode="decimal" type="text" value="1" aria-label="Amount">
+      <input class="base-amount" id="baseAmount" inputmode="decimal" type="text" value="1" autocomplete="off" aria-label="Amount">
     </div>
   </div>
 
+  <!-- Converted currency rows, rendered by buildList() -->
   <div class="list" id="list"></div>
 
   <div class="add-row">
-    <button class="add-btn" id="addBtn"><span class="plus">+</span> Add currency</button>
+    <button class="add-btn" id="addBtn" aria-expanded="false" aria-controls="addPicker"><span class="plus" aria-hidden="true">+</span> Add currency</button>
     <div class="add-picker" id="addPicker">
-      <input class="search-input" id="searchInput" type="text" placeholder="Search by code or name…" aria-label="Search currency" autocomplete="off">
+      <input class="search-input" id="searchInput" type="text" placeholder="Search by code or name…" aria-label="Search currency" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
       <div class="search-results" id="searchResults"></div>
     </div>
   </div>
 
-  <div class="status" id="statusLine"></div>
+  <!-- Network / freshness messages. aria-live so it is announced. -->
+  <div class="status" id="statusLine" role="status" aria-live="polite"></div>
 </div>
 
-<div class="settings-overlay" id="settingsOverlay">
+<!-- Settings sheet. inert + aria-hidden keep it out of the tab order and off
+     the accessibility tree while closed. -->
+<div class="settings-overlay" id="settingsOverlay" aria-hidden="true" inert>
   <div class="settings-inner">
     <div class="masthead">
       <div>
@@ -528,7 +594,7 @@
         <span class="updated" id="updatedLabelSettings">—</span>
       </div>
       <button class="icon-btn" id="closeMenuBtn" aria-label="Close settings">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
           <line x1="1" y1="1" x2="17" y2="17"/>
           <line x1="17" y1="1" x2="1" y2="17"/>
         </svg>
@@ -539,14 +605,14 @@
       <div class="settings-group">
         <div class="settings-title">Settings</div>
         <div class="settings-row">
-          <span class="row-label">Dark mode</span>
-          <button class="theme-switch" id="themeSwitch" role="switch" aria-checked="false" aria-label="Toggle dark mode">
+          <span class="row-label" id="darkModeLabel">Dark mode</span>
+          <button class="theme-switch" id="themeSwitch" role="switch" aria-checked="false" aria-labelledby="darkModeLabel">
             <span class="knob"></span>
           </button>
         </div>
         <div class="settings-row">
           <span class="row-label">Refresh</span>
-          <a href="#" class="settings-link" id="refreshLink">Refresh</a>
+          <a href="#" class="settings-link" id="refreshLink" role="button">Refresh</a>
         </div>
       </div>
 
@@ -566,77 +632,26 @@
 </div>
 
 <script>
-const THEME_KEY = "convertor-theme";
-const themeSwitch = document.getElementById("themeSwitch");
-const themeColorMeta = document.querySelector('meta[name="theme-color"]');
-const refreshLink = document.getElementById("refreshLink");
-const menuBtn = document.getElementById("menuBtn");
-const closeMenuBtn = document.getElementById("closeMenuBtn");
-const settingsOverlay = document.getElementById("settingsOverlay");
+"use strict";
+/* ==================================================================
+   QuickConvertor
 
-function systemPrefersDark(){
-  return !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
-}
+   A single-page currency converter. Rates come from open.er-api.com,
+   are cached in localStorage, and the whole UI works offline from that
+   cache. Structure below:
 
-function applyTheme(theme){
-  document.documentElement.setAttribute("data-theme", theme);
-  themeSwitch.setAttribute("aria-checked", theme === "dark" ? "true" : "false");
-  const iconPath = theme === "dark" ? "icon/Icon-192-dark.png" : "icon/Icon-192.png";
-  const appIcon = document.getElementById("appIcon");
-  const appleIcon = document.getElementById("appleIcon");
-  if(appIcon) appIcon.setAttribute("href", iconPath);
-  if(appleIcon) appleIcon.setAttribute("href", iconPath);
-  if(themeColorMeta){
-    themeColorMeta.setAttribute("content", theme === "dark" ? "#1A1A1A" : "#EEEEEE");
-  }
-}
+     1. Constants and currency data
+     2. DOM references
+     3. State and persistence
+     4. Number formatting and parsing
+     5. Rates: fetching, freshness, offline rebasing
+     6. Rendering: base picker, rows, search
+     7. Interaction: amount edits, drag reorder, settings, theme
+     8. Boot
+   ================================================================== */
 
-applyTheme(document.documentElement.getAttribute("data-theme") || "light");
 
-themeSwitch.addEventListener("click", () => {
-  const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
-  localStorage.setItem(THEME_KEY, next);
-  applyTheme(next);
-});
-
-if(window.matchMedia){
-  const mq = window.matchMedia("(prefers-color-scheme: dark)");
-  const handleSystemChange = (e) => {
-    if(!localStorage.getItem(THEME_KEY)){
-      applyTheme(e.matches ? "dark" : "light");
-    }
-  };
-  if(mq.addEventListener){
-    mq.addEventListener("change", handleSystemChange);
-  }else if(mq.addListener){
-    mq.addListener(handleSystemChange);
-  }
-}
-
-document.addEventListener("visibilitychange", () => {
-  if(document.visibilityState === "visible" && !localStorage.getItem(THEME_KEY)){
-    applyTheme(systemPrefersDark() ? "dark" : "light");
-  }
-});
-window.addEventListener("pageshow", () => {
-  if(!localStorage.getItem(THEME_KEY)){
-    applyTheme(systemPrefersDark() ? "dark" : "light");
-  }
-});
-
-if(refreshLink){
-  refreshLink.addEventListener("click", (e) => {
-    e.preventDefault();
-    window.location.reload();
-  });
-}
-
-menuBtn.addEventListener("click", () => {
-  settingsOverlay.classList.add("open");
-});
-closeMenuBtn.addEventListener("click", () => {
-  settingsOverlay.classList.remove("open");
-});
+/* ============ 1. Constants and currency data ============ */
 
 const CURRENCY_NAMES = {
   AED:"UAE Dirham", AFN:"Afghan Afghani", ALL:"Albanian Lek", AMD:"Armenian Dram",
@@ -680,345 +695,533 @@ const CURRENCY_NAMES = {
   XOF:"West African CFA Franc", XPF:"CFP Franc", YER:"Yemeni Rial", ZAR:"South African Rand",
   ZMW:"Zambian Kwacha", ZWL:"Zimbabwean Dollar"
 };
-const ALL_CURRENCIES = Object.keys(CURRENCY_NAMES);
-const STORAGE_KEY = "rate-app-state-v3";
-const DEFAULT_BASE = "USD";
-const DEFAULT_LIST = ["EUR","GBP","NZD"];
 
-// Row background colors, cycling per position — matches the design's
-// rotating palette (yellow, pink, teal, lime, mauve).
+const ALL_CURRENCIES = Object.keys(CURRENCY_NAMES);
+
+/* Strips accents so "krona" finds "Icelandic Króna" and "colon" finds
+   "Costa Rican Colón" — nobody types the diacritics on a phone. */
+function foldAccents(text){
+  return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+/* Folded, lowercased "CODE name" haystack per currency, built once. Without
+   this the search would re-normalise ~160 strings on every keystroke. */
+const SEARCH_INDEX = new Map(
+  ALL_CURRENCIES.map(code => [code, foldAccents((code + " " + CURRENCY_NAMES[code]).toLowerCase())])
+);
+
+const STORAGE_KEY   = "rate-app-state-v3";
+const THEME_KEY     = "convertor-theme";
+const API_BASE      = "https://open.er-api.com/v6/latest/";
+const DEFAULT_BASE  = "USD";
+const DEFAULT_LIST  = ["EUR","GBP","NZD"];
+
+/* The upstream feed publishes once a day, so re-fetching on every launch is
+   wasted bandwidth. Cached rates newer than this are used as-is; Refresh in
+   settings always forces a fetch regardless. */
+const RATES_TTL_MS  = 30 * 60 * 1000;
+/* Hard ceiling on a rates request, so a dead connection can't leave the
+   status line stuck on "Updating rates…" forever. */
+const FETCH_TIMEOUT_MS = 10000;
+
+/* Row background colours cycle by position — the design's rotating palette
+   (yellow, pink, teal, lime, mauve). */
 const ROW_COLORS = ["#FFCF3C", "#FFB7F4", "#A8D8DA", "#C7D96B", "#C2B1B1"];
 
-const baseCcy = document.getElementById("baseCcy");
-const baseAmount = document.getElementById("baseAmount");
-const listEl = document.getElementById("list");
-const updatedLabel = document.getElementById("updatedLabel");
+/* Intl formatters are expensive to construct, and fmt() runs once per row on
+   every keystroke — so build them once here instead of inside the function. */
+const AMOUNT_FMT = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
+const DATE_FMT   = new Intl.DateTimeFormat(undefined, { month:"short", day:"numeric" });
+const TIME_FMT   = new Intl.DateTimeFormat(undefined, { hour:"2-digit", minute:"2-digit" });
+
+
+/* ============ 2. DOM references ============ */
+/* Looked up once at load; every handler reuses them. */
+
+const baseCcy              = document.getElementById("baseCcy");
+const baseAmount           = document.getElementById("baseAmount");
+const listEl               = document.getElementById("list");
+const updatedLabel         = document.getElementById("updatedLabel");
 const updatedLabelSettings = document.getElementById("updatedLabelSettings");
-const statusLine = document.getElementById("statusLine");
-const addBtn = document.getElementById("addBtn");
-const addPicker = document.getElementById("addPicker");
-const searchInput = document.getElementById("searchInput");
-const searchResults = document.getElementById("searchResults");
+const statusLine           = document.getElementById("statusLine");
+const addBtn               = document.getElementById("addBtn");
+const addPicker            = document.getElementById("addPicker");
+const searchInput          = document.getElementById("searchInput");
+const searchResults        = document.getElementById("searchResults");
+const themeSwitch          = document.getElementById("themeSwitch");
+const themeColorMeta       = document.querySelector('meta[name="theme-color"]');
+const refreshLink          = document.getElementById("refreshLink");
+const menuBtn              = document.getElementById("menuBtn");
+const closeMenuBtn         = document.getElementById("closeMenuBtn");
+const settingsOverlay      = document.getElementById("settingsOverlay");
 
-let rates = null;
-let base = DEFAULT_BASE;
-let targetList = [...DEFAULT_LIST];
-let lastUpdated = null;
-let baseValue = 1;
 
+/* ============ 3. State and persistence ============ */
+
+let rates      = null;              // { CODE: rate } expressed in ratesBase
+let ratesBase  = null;              // which currency `rates` is relative to
+let base       = DEFAULT_BASE;      // currency the user types into
+let targetList = [...DEFAULT_LIST]; // codes shown as rows, in display order
+let lastUpdated = null;             // ISO string of the rates' publish time
+let baseValue  = 1;                 // the amount, in `base`
+
+/* code -> { row, input } for the rendered rows. refreshValues() runs on every
+   keystroke; walking this map avoids a querySelectorAll each time. */
+const rowRefs = new Map();
+
+let saveTimer = null;
+
+/* Writes are debounced because typing changes baseValue on every keystroke and
+   localStorage writes are synchronous (they block the main thread). */
 function saveState(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({
-    base, targetList, rates, lastUpdated, baseValue
-  }));
+  if(saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(flushSave, 250);
+}
+
+function flushSave(){
+  if(saveTimer){ clearTimeout(saveTimer); saveTimer = null; }
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      base, targetList, rates, ratesBase, lastUpdated, baseValue
+    }));
+  }catch(e){
+    /* Quota exceeded or private mode — the app still works, it just won't
+       remember this session. */
+  }
 }
 
 function loadState(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return null;
-    return JSON.parse(raw);
-  }catch(e){ return null; }
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){
+    return null;
+  }
 }
 
-function ccyLabel(code){
-  return `${code} — ${CURRENCY_NAMES[code] || ""}`;
+/* Make sure nothing typed in the last quarter second is lost when the app is
+   backgrounded or closed. pagehide is the reliable one on iOS. */
+window.addEventListener("pagehide", flushSave);
+document.addEventListener("visibilitychange", () => {
+  if(document.visibilityState === "hidden") flushSave();
+});
+
+
+/* ============ 4. Number formatting and parsing ============ */
+
+/* Escapes text before it goes into innerHTML. The currency names are static,
+   but this keeps the row/search templates safe if the data ever changes. */
+const ESCAPES = { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" };
+function esc(value){
+  return String(value).replace(/[&<>"']/g, ch => ESCAPES[ch]);
 }
 
+/* Display format: sub-unit amounts get 4 decimals so small rates stay useful,
+   everything else gets locale grouping with 2 decimals. */
+function fmt(n){
+  if(typeof n !== "number" || !isFinite(n)) return "";
+  if(n === 0) return "0";
+  return Math.abs(n) < 1 ? n.toFixed(4) : AMOUNT_FMT.format(n);
+}
+
+/* Edit format: the same number with no grouping separators and a plain ".".
+   A focused field switches to this so what the user edits always matches what
+   the input sanitizer accepts — a locale-grouped "1 234,56" would otherwise be
+   stripped down to a completely different number on the first keystroke. */
+function fmtRaw(n){
+  if(typeof n !== "number" || !isFinite(n)) return "";
+  if(n === 0) return "0";
+  let s = Math.abs(n) < 1 ? n.toFixed(4) : n.toFixed(2);
+  if(s.indexOf(".") !== -1){
+    s = s.replace(/0+$/, "").replace(/\.$/, "");   // drop trailing zeros only after a point
+  }
+  return s;
+}
+
+/* Keeps digits and at most one decimal point. A typed "," becomes "." so
+   comma-decimal keyboards work; the old single-regex version also let "1.2.3"
+   through, which parseFloat silently truncated to 1.2. */
+function sanitizeNumeric(raw){
+  let clean = raw.replace(/,/g, ".").replace(/[^0-9.]/g, "");
+  const dot = clean.indexOf(".");
+  if(dot !== -1){
+    clean = clean.slice(0, dot + 1) + clean.slice(dot + 1).replace(/\./g, "");
+  }
+  return clean;
+}
+
+/* Parses a sanitized field into a number, treating blank/partial input ("",
+   ".") as 0 rather than NaN. */
+function parseAmount(raw){
+  const n = parseFloat(raw);
+  return isFinite(n) ? n : 0;
+}
+
+/* Shrinks an input's font as the text gets longer so long numbers scale down
+   instead of clipping. Only writes when the size actually changes — assigning
+   style.fontSize unconditionally would invalidate layout on every keystroke. */
+const AUTOSIZE_THRESHOLD = 6;   // characters that fit at full size
+const AUTOSIZE_STEP = 1.8;      // px removed per extra character
+function autosize(el, maxSize, minSize){
+  const len = el.value.length || 1;
+  const size = len > AUTOSIZE_THRESHOLD
+    ? Math.max(minSize, maxSize - (len - AUTOSIZE_THRESHOLD) * AUTOSIZE_STEP)
+    : maxSize;
+  const px = size + "px";
+  if(el.style.fontSize !== px) el.style.fontSize = px;
+}
+function autosizeBase(){ autosize(baseAmount, 38, 20); }
+function autosizeRow(input){ autosize(input, 20, 16); }
+
+
+/* ============ 5. Rates ============ */
+
+let inflight = null;   // AbortController for the request in flight
+let requestId = 0;     // guards against an older response landing last
+
+/* True when the cached rates are for the current base and young enough to
+   skip the network entirely. */
+function ratesAreFresh(){
+  if(!rates || ratesBase !== base || !lastUpdated) return false;
+  const age = Date.now() - new Date(lastUpdated).getTime();
+  return isFinite(age) && age >= 0 && age < RATES_TTL_MS;
+}
+
+/* Converts the cached table to a new base without a network call.
+   Cross rates share a common origin, so newRate = rate[code] / rate[newBase]
+   is exact. This makes switching base instant, and possible offline. */
+function rebaseRates(nextBase){
+  if(!rates) return false;
+  const divisor = rates[nextBase];
+  if(typeof divisor !== "number" || !isFinite(divisor) || divisor === 0) return false;
+
+  const next = {};
+  for(const code in rates){
+    next[code] = rates[code] / divisor;
+  }
+  next[nextBase] = 1;
+  rates = next;
+  ratesBase = nextBase;
+  return true;
+}
+
+function setStatus(text, isError){
+  statusLine.textContent = text;
+  statusLine.className = isError ? "status error" : "status";
+}
+
+/**
+ * Fetches rates for the current base.
+ * @param {object}  [opts]
+ * @param {boolean} [opts.force]  ignore the freshness window
+ * @param {boolean} [opts.quiet]  don't show "Updating rates…" (background refresh)
+ */
+async function fetchRates({ force = false, quiet = false } = {}){
+  if(!force && ratesAreFresh()){
+    updateLabels();
+    return;
+  }
+
+  // Abandon any request still running: its base may already be stale.
+  if(inflight) inflight.abort();
+  const controller = new AbortController();
+  inflight = controller;
+  const myId = ++requestId;
+
+  const requestedBase = base;
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  if(!quiet) setStatus("Updating rates…", false);
+
+  try{
+    const res = await fetch(API_BASE + encodeURIComponent(requestedBase), {
+      signal: controller.signal,
+      cache: "no-store"          // the SW skips this host; don't use the HTTP cache either
+    });
+    if(!res.ok) throw new Error("bad response " + res.status);
+
+    const data = await res.json();
+    if(data.result !== "success" || !data.rates) throw new Error("api error");
+
+    // A newer request (or a base change) superseded this one — drop it.
+    if(myId !== requestId || requestedBase !== base) return;
+
+    rates = data.rates;
+    rates[requestedBase] = 1;    // the API omits an exact 1.0 for the base
+    ratesBase = requestedBase;
+    lastUpdated = data.time_last_update_utc
+      ? new Date(data.time_last_update_utc).toISOString()
+      : new Date().toISOString();
+
+    saveState();
+    setStatus("", false);
+    updateLabels();
+    applyRates();
+  }catch(err){
+    if(myId !== requestId) return;            // superseded, not a real failure
+    if(rates){
+      setStatus("Offline — showing last saved rates", true);
+      updateLabels();
+      applyRates();
+    }else{
+      setStatus("Couldn't load rates. Check your connection.", true);
+    }
+  }finally{
+    clearTimeout(timer);
+    if(inflight === controller) inflight = null;
+  }
+}
+
+function updateLabels(){
+  if(!lastUpdated) return;
+  const d = new Date(lastUpdated);
+  if(isNaN(d.getTime())) return;
+  const text = "Updated: " + DATE_FMT.format(d) + " " + TIME_FMT.format(d);
+  updatedLabel.textContent = text;
+  updatedLabelSettings.textContent = text;
+}
+
+
+/* ============ 6. Rendering ============ */
+
+/* Builds all ~160 <option>s as one string. One innerHTML assignment is far
+   cheaper than 160 createElement + appendChild calls. */
 function populateBaseSelect(){
-  baseCcy.innerHTML = "";
-  ALL_CURRENCIES.forEach(c => {
-    const opt = document.createElement("option");
-    opt.value = c; opt.textContent = ccyLabel(c);
-    baseCcy.appendChild(opt);
-  });
+  baseCcy.innerHTML = ALL_CURRENCIES
+    .map(c => `<option value="${c}">${c} — ${esc(CURRENCY_NAMES[c])}</option>`)
+    .join("");
   baseCcy.value = base;
 }
 
+/* Currencies not already on screen (and not the base itself). */
 function availableCurrencies(){
   return ALL_CURRENCIES.filter(c => c !== base && !targetList.includes(c));
 }
 
 function renderSearchResults(){
   const available = availableCurrencies();
+  // Nothing left to add — hide the button rather than open an empty picker.
   addBtn.style.display = available.length ? "flex" : "none";
 
-  const query = searchInput.value.trim().toLowerCase();
+  // Fold the query the same way the index was folded, so accents don't matter.
+  const query = foldAccents(searchInput.value.trim().toLowerCase());
   const matches = query
-    ? available.filter(c =>
-        c.toLowerCase().includes(query) ||
-        (CURRENCY_NAMES[c] || "").toLowerCase().includes(query))
+    ? available.filter(c => SEARCH_INDEX.get(c).includes(query))
     : available;
 
-  searchResults.innerHTML = "";
-
   if(matches.length === 0){
-    const empty = document.createElement("div");
-    empty.className = "search-empty";
-    empty.textContent = "No currency matches that search";
-    searchResults.appendChild(empty);
+    searchResults.innerHTML = '<div class="search-empty">No currency matches that search</div>';
     return;
   }
 
-  matches.forEach(code => {
-    const item = document.createElement("div");
-    item.className = "search-item";
-    item.innerHTML = `<span class="code">${code}</span><span class="name">${CURRENCY_NAMES[code] || ""}</span>`;
-    item.addEventListener("click", () => addCurrency(code));
-    searchResults.appendChild(item);
-  });
+  // Single innerHTML write; clicks are handled by one delegated listener below.
+  searchResults.innerHTML = matches
+    .map(code =>
+      `<div class="search-item" data-code="${code}">` +
+        `<span class="code">${code}</span>` +
+        `<span class="name">${esc(CURRENCY_NAMES[code])}</span>` +
+      `</div>`)
+    .join("");
 }
 
-async function addCurrency(code){
-  targetList.push(code);
-  addPicker.classList.remove("open");
-  searchInput.value = "";
-  saveState();
-  if(rates && rates[code] == null){
-    await fetchRates();
-  } else {
-    buildList();
-  }
-}
-
-function updateLabels(){
-  if(lastUpdated){
-    const d = new Date(lastUpdated);
-    const text = "Updated: " + d.toLocaleDateString(undefined,{month:"short",day:"numeric"}) +
-      " " + d.toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit"});
-    updatedLabel.textContent = text;
-    updatedLabelSettings.textContent = text;
-  }
-}
-
-function fmt(n){
-  if(isNaN(n)) return "";
-  return n < 1 ? n.toFixed(4) : n.toLocaleString(undefined,{maximumFractionDigits:2});
-}
-
-// Shrinks an input's font as its text gets longer, so long numbers
-// never clip instead of overflowing the field.
-function autosize(el, maxSize, minSize){
-  const len = el.value.length || 1;
-  const threshold = 6;
-  let size = maxSize;
-  if(len > threshold){
-    size = Math.max(minSize, maxSize - (len - threshold) * 1.8);
-  }
-  el.style.fontSize = size + "px";
-}
-function autosizeBase(){ autosize(baseAmount, 38, 20); }
-function autosizeRow(input){ autosize(input, 20, 16); }
-
-async function fetchRates(){
-  try{
-    statusLine.textContent = "Updating rates…";
-    statusLine.className = "status";
-    const res = await fetch(`https://open.er-api.com/v6/latest/${base}`);
-    if(!res.ok) throw new Error("bad response");
-    const data = await res.json();
-    if(data.result !== "success") throw new Error("api error");
-    rates = data.rates;
-    rates[base] = 1;
-    lastUpdated = data.time_last_update_utc ? new Date(data.time_last_update_utc).toISOString() : new Date().toISOString();
-    saveState();
-    statusLine.textContent = "";
-    updateLabels();
-    buildList();
-  }catch(err){
-    if(rates){
-      statusLine.textContent = "Offline — showing last saved rates";
-      statusLine.className = "status error";
-      updateLabels();
-      buildList();
-    }else{
-      statusLine.textContent = "Couldn't load rates. Check your connection.";
-      statusLine.className = "status error";
-    }
-  }
-}
-
-// Rebuilds the row DOM structure. Call only when the list itself, the base
-// currency, or freshly fetched rates change — not on every keystroke.
+/* Rebuilds the row DOM. Call when the list, the base, or the rates change —
+   never on a keystroke; refreshValues() handles that without touching the DOM
+   structure. */
 function buildList(){
-  listEl.innerHTML = "";
+  rowRefs.clear();
 
-  targetList.forEach((code, index) => {
+  listEl.innerHTML = targetList.map((code, index) => {
     const rate = rates ? rates[code] : null;
-    const row = document.createElement("div");
-    row.className = "ccy-row";
-    row.dataset.code = code;
-    row.style.background = ROW_COLORS[index % ROW_COLORS.length];
+    const hasRate = typeof rate === "number" && isFinite(rate);
+    const rateText = hasRate ? `1 ${base} = ${rate.toFixed(4)} ${code}` : "rate unavailable";
+    const value = hasRate ? fmt(baseValue * rate) : "";
+    const color = ROW_COLORS[index % ROW_COLORS.length];
 
-    const rateText = rate != null ? `1 ${base} = ${rate.toFixed(4)} ${code}` : "rate unavailable";
-    const value = rate != null ? fmt(baseValue * rate) : "";
-
-    row.innerHTML = `
-      <div class="drag-handle" aria-label="Drag to reorder ${code}">
-        <svg viewBox="0 0 12 20" width="12" height="20">
-          <circle cx="3" cy="3" r="1.6"/><circle cx="9" cy="3" r="1.6"/>
-          <circle cx="3" cy="10" r="1.6"/><circle cx="9" cy="10" r="1.6"/>
-          <circle cx="3" cy="17" r="1.6"/><circle cx="9" cy="17" r="1.6"/>
-        </svg>
-      </div>
-      <div class="info">
-        <div class="code-line">
-          <span class="code">${code}</span>
-          <span class="name">${CURRENCY_NAMES[code] || ""}</span>
+    return `
+      <div class="ccy-row" data-code="${code}" style="background:${color}">
+        <div class="drag-handle" aria-label="Drag to reorder ${code}">
+          <svg viewBox="0 0 12 20" width="12" height="20" aria-hidden="true">
+            <circle cx="3" cy="3" r="1.6"/><circle cx="9" cy="3" r="1.6"/>
+            <circle cx="3" cy="10" r="1.6"/><circle cx="9" cy="10" r="1.6"/>
+            <circle cx="3" cy="17" r="1.6"/><circle cx="9" cy="17" r="1.6"/>
+          </svg>
         </div>
-        <div class="sub">${rateText}</div>
-      </div>
-      <input class="row-amount" type="text" inputmode="decimal" value="${value}" aria-label="${code} amount">
-      <button class="remove-btn" aria-label="Remove ${code}" data-code="${code}">✕</button>
-    `;
-    listEl.appendChild(row);
+        <div class="info">
+          <div class="code-line">
+            <span class="code">${code}</span>
+            <span class="name">${esc(CURRENCY_NAMES[code] || "")}</span>
+          </div>
+          <div class="sub">${esc(rateText)}</div>
+        </div>
+        <input class="row-amount" type="text" inputmode="decimal" autocomplete="off" value="${esc(value)}" aria-label="${code} amount">
+        <button class="remove-btn" aria-label="Remove ${code}">✕</button>
+      </div>`;
+  }).join("");
 
+  // Cache the row parts once per build so the hot paths (refreshValues,
+  // applyRates) never have to query the DOM again.
+  for(const row of listEl.children){
     const input = row.querySelector(".row-amount");
+    rowRefs.set(row.dataset.code, { row, input, sub: row.querySelector(".sub") });
     autosizeRow(input);
-    input.addEventListener("focus", () => input.select());
-    input.addEventListener("input", () => {
-      input.value = input.value.replace(/[^0-9.]/g, "");
-      onRowEdit(code, input.value);
-    });
-
-    row.querySelector(".remove-btn").addEventListener("click", () => {
-      targetList = targetList.filter(c => c !== code);
-      saveState();
-      buildList();
-      renderSearchResults();
-    });
-
-    bindDragHandle(row);
-  });
+  }
 
   renderSearchResults();
 }
 
-// Touch/mouse-friendly drag reordering using Pointer Events (works on
-// mobile, unlike HTML5 drag-and-drop). Dragged row follows the finger;
-// other rows slide to open a gap; order is committed on release.
-function bindDragHandle(row){
-  const handle = row.querySelector(".drag-handle");
-  let dragging = false;
-  let startY = 0;
-  let pitch = 0;
-  let draggedIndex = 0;
-  let targetIndex = 0;
-  let rowsSnapshot = [];
+/* Called after new rates arrive. A full buildList() replaces the DOM, which
+   would steal focus and drop half-typed input, so while a field is being
+   edited we patch the rate captions and idle amounts in place instead. */
+function applyRates(){
+  const active = document.activeElement;
+  const editing = active === baseAmount ||
+    (active && active.classList && active.classList.contains("row-amount"));
 
-  function onPointerDown(e){
-    e.preventDefault();
-    dragging = true;
-    startY = e.clientY;
-    rowsSnapshot = Array.from(listEl.querySelectorAll(".ccy-row"));
-    draggedIndex = rowsSnapshot.indexOf(row);
-    targetIndex = draggedIndex;
-    const tops = rowsSnapshot.map(r => r.getBoundingClientRect().top);
-    pitch = rowsSnapshot.length > 1 ? (tops[1] - tops[0]) : (row.offsetHeight + 12);
-    listEl.classList.add("dragging-active");
-    row.classList.add("dragging");
-    handle.setPointerCapture(e.pointerId);
-    handle.addEventListener("pointermove", onPointerMove);
-    handle.addEventListener("pointerup", onPointerUp);
-    handle.addEventListener("pointercancel", onPointerUp);
+  if(!editing){
+    buildList();
+    return;
   }
 
-  function onPointerMove(e){
-    if(!dragging) return;
-    const deltaY = e.clientY - startY;
-    row.style.transform = `translateY(${deltaY}px)`;
-
-    let newIndex = draggedIndex + Math.round(deltaY / pitch);
-    newIndex = Math.max(0, Math.min(rowsSnapshot.length - 1, newIndex));
-    if(newIndex === targetIndex) return;
-    targetIndex = newIndex;
-
-    rowsSnapshot.forEach((r, i) => {
-      if(r === row) return;
-      let shift = 0;
-      if(draggedIndex < targetIndex && i > draggedIndex && i <= targetIndex){
-        shift = -pitch;
-      } else if(draggedIndex > targetIndex && i >= targetIndex && i < draggedIndex){
-        shift = pitch;
-      }
-      r.style.transform = shift ? `translateY(${shift}px)` : "";
-    });
-  }
-
-  function onPointerUp(e){
-    if(!dragging) return;
-    dragging = false;
-    handle.releasePointerCapture(e.pointerId);
-    handle.removeEventListener("pointermove", onPointerMove);
-    handle.removeEventListener("pointerup", onPointerUp);
-    handle.removeEventListener("pointercancel", onPointerUp);
-
-    row.classList.remove("dragging");
-    listEl.classList.remove("dragging-active");
-    rowsSnapshot.forEach(r => { r.style.transform = ""; });
-
-    if(targetIndex !== draggedIndex){
-      const [moved] = targetList.splice(draggedIndex, 1);
-      targetList.splice(targetIndex, 0, moved);
-      saveState();
-      buildList();
-    }
-  }
-
-  handle.addEventListener("pointerdown", onPointerDown);
-}
-
-// Updates every input's displayed value from the current baseValue,
-// without rebuilding the DOM (so focus/cursor position is preserved).
-function refreshValues(skipCode){
-  baseAmount.value = fmt(baseValue) || baseAmount.value;
-  autosizeBase();
-
-  listEl.querySelectorAll(".ccy-row").forEach(row => {
-    const code = row.dataset.code;
-    if(code === skipCode) return;
+  for(const [code, ref] of rowRefs){
     const rate = rates ? rates[code] : null;
-    const input = row.querySelector(".row-amount");
-    if(rate != null){
-      input.value = fmt(baseValue * rate);
-      autosizeRow(input);
+    const hasRate = typeof rate === "number" && isFinite(rate);
+    if(ref.sub){
+      ref.sub.textContent = hasRate ? `1 ${base} = ${rate.toFixed(4)} ${code}` : "rate unavailable";
     }
-  });
+  }
+  refreshValues(active);
 }
+
+/* Writes current values into every input from baseValue, without rebuilding
+   the DOM, so focus and cursor position survive. `skipEl` is the field the
+   user is typing in — overwriting it would eat characters like a trailing
+   decimal point. */
+function refreshValues(skipEl){
+  if(baseAmount !== skipEl){
+    baseAmount.value = fmt(baseValue);
+    autosizeBase();
+  }
+
+  for(const [code, ref] of rowRefs){
+    if(ref.input === skipEl) continue;
+    const rate = rates ? rates[code] : null;
+    if(typeof rate === "number" && isFinite(rate)){
+      ref.input.value = fmt(baseValue * rate);
+      autosizeRow(ref.input);
+    }
+  }
+}
+
+
+/* ============ 7. Interaction ============ */
+
+/* ---- Amount editing ---- */
 
 function onBaseEdit(){
-  const amt = parseFloat(baseAmount.value);
-  baseValue = isNaN(amt) ? 0 : amt;
+  baseValue = parseAmount(baseAmount.value);
   autosizeBase();
-  refreshValues(null);
+  refreshValues(baseAmount);   // skip the field being typed in
+  saveState();
 }
 
-function onRowEdit(code, rawValue){
-  if(!rates || rates[code] == null) return;
-  const amt = parseFloat(rawValue);
-  const numeric = isNaN(amt) ? 0 : amt;
-  baseValue = numeric / rates[code];
-  const editedInput = listEl.querySelector(`.ccy-row[data-code="${code}"] .row-amount`);
-  if(editedInput) autosizeRow(editedInput);
-  refreshValues(code);
+function onRowEdit(code, input){
+  const rate = rates ? rates[code] : null;
+  if(typeof rate !== "number" || !isFinite(rate) || rate === 0) return;
+  baseValue = parseAmount(input.value) / rate;
+  autosizeRow(input);
+  refreshValues(input);
+  saveState();
 }
 
-baseAmount.addEventListener("focus", () => baseAmount.select());
+/* A field being edited shows the plain, un-grouped number; an idle field shows
+   the grouped display format. */
+baseAmount.addEventListener("focus", () => {
+  baseAmount.value = fmtRaw(baseValue);
+  autosizeBase();
+  baseAmount.select();
+});
+baseAmount.addEventListener("blur", () => {
+  baseAmount.value = fmt(baseValue);
+  autosizeBase();
+});
 baseAmount.addEventListener("input", () => {
-  baseAmount.value = baseAmount.value.replace(/[^0-9.]/g,"");
-  autosizeBase();
+  baseAmount.value = sanitizeNumeric(baseAmount.value);
   onBaseEdit();
 });
 
-baseCcy.addEventListener("change", async () => {
-  base = baseCcy.value;
-  targetList = targetList.filter(c => c !== base);
-  saveState();
-  await fetchRates();
+/* The converted amount currently shown by a row, or NaN when its rate is
+   missing. */
+function rowNumber(code){
+  const rate = rates ? rates[code] : null;
+  return (typeof rate === "number" && isFinite(rate)) ? baseValue * rate : NaN;
+}
+
+/* Row inputs and remove buttons use delegated listeners on the container, so
+   rebuilding the list attaches no per-row handlers at all. */
+listEl.addEventListener("focusin", (e) => {
+  const input = e.target;
+  if(!input.classList.contains("row-amount")) return;
+  const row = input.closest(".ccy-row");
+  if(!row) return;                       // input already detached by a rebuild
+  const n = rowNumber(row.dataset.code);
+  if(isFinite(n)){
+    input.value = fmtRaw(n);
+    autosizeRow(input);
+  }
+  input.select();
 });
 
+listEl.addEventListener("focusout", (e) => {
+  const input = e.target;
+  if(!input.classList.contains("row-amount")) return;
+  const row = input.closest(".ccy-row");
+  if(!row) return;                       // input already detached by a rebuild
+  const n = rowNumber(row.dataset.code);
+  if(isFinite(n)){
+    input.value = fmt(n);
+    autosizeRow(input);
+  }
+});
+
+listEl.addEventListener("input", (e) => {
+  const input = e.target;
+  if(!input.classList.contains("row-amount")) return;
+  const row = input.closest(".ccy-row");
+  if(!row) return;
+  input.value = sanitizeNumeric(input.value);
+  onRowEdit(row.dataset.code, input);
+});
+
+listEl.addEventListener("click", (e) => {
+  const btn = e.target.closest(".remove-btn");
+  if(!btn) return;
+  const row = btn.closest(".ccy-row");
+  if(!row) return;
+  const code = row.dataset.code;
+  targetList = targetList.filter(c => c !== code);
+  flushSave();
+  buildList();
+});
+
+
+/* ---- Add currency ---- */
+
+function addCurrency(code){
+  if(targetList.includes(code)) return;
+  targetList.push(code);
+  addPicker.classList.remove("open");
+  addBtn.setAttribute("aria-expanded", "false");
+  searchInput.value = "";
+  flushSave();
+  buildList();
+  // The feed returns every currency at once, so a missing rate means the cache
+  // predates this code. Refresh quietly rather than blocking the row.
+  if(rates && rates[code] == null) fetchRates({ force: true, quiet: true });
+}
+
 addBtn.addEventListener("click", () => {
-  addPicker.classList.toggle("open");
-  if(addPicker.classList.contains("open")){
+  const open = addPicker.classList.toggle("open");
+  addBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  if(open){
     renderSearchResults();
     searchInput.focus();
   }
@@ -1026,29 +1229,263 @@ addBtn.addEventListener("click", () => {
 
 searchInput.addEventListener("input", renderSearchResults);
 
-async function init(){
+// One delegated click handler instead of a listener per result row.
+searchResults.addEventListener("click", (e) => {
+  const item = e.target.closest(".search-item");
+  if(item) addCurrency(item.dataset.code);
+});
+
+
+/* ---- Base currency ---- */
+
+baseCcy.addEventListener("change", () => {
+  base = baseCcy.value;
+  targetList = targetList.filter(c => c !== base);
+
+  // Convert what we already have so the new base renders instantly (and works
+  // offline); then refresh from the network in the background.
+  const rebased = rebaseRates(base);
+  flushSave();
+  if(rebased){
+    buildList();
+    fetchRates({ force: true, quiet: true });
+  }else{
+    rates = null;
+    ratesBase = null;
+    buildList();
+    fetchRates({ force: true });
+  }
+});
+
+
+/* ---- Drag to reorder ----
+   Pointer Events, so one implementation covers touch, pen and mouse (HTML5
+   drag-and-drop doesn't work on mobile). The dragged row follows the finger,
+   its neighbours slide to open a gap, and the order is committed on release.
+   A single delegated pointerdown serves every row. */
+
+let drag = null;
+
+listEl.addEventListener("pointerdown", (e) => {
+  const handle = e.target.closest(".drag-handle");
+  if(!handle || drag) return;
+  const row = handle.closest(".ccy-row");
+  if(!row) return;
+
+  e.preventDefault();
+
+  // Measure every row once, up front: reading rects during pointermove would
+  // force a layout on each frame.
+  const rows = Array.from(listEl.children);
+  const tops = rows.map(r => r.getBoundingClientRect().top);
+  const index = rows.indexOf(row);
+
+  drag = {
+    handle, row, rows,
+    startY: e.clientY,
+    fromIndex: index,
+    toIndex: index,
+    // Distance between row origins: real spacing when we have two rows,
+    // otherwise height + the CSS gap.
+    pitch: rows.length > 1 ? (tops[1] - tops[0]) : (row.offsetHeight + 12)
+  };
+
+  listEl.classList.add("dragging-active");
+  row.classList.add("dragging");
+  handle.setPointerCapture(e.pointerId);
+  handle.addEventListener("pointermove", onDragMove);
+  handle.addEventListener("pointerup", onDragEnd);
+  handle.addEventListener("pointercancel", onDragEnd);
+});
+
+function onDragMove(e){
+  if(!drag) return;
+  const deltaY = e.clientY - drag.startY;
+  drag.row.style.transform = `translateY(${deltaY}px)`;
+
+  // Which slot the row would land in if released now.
+  let next = drag.fromIndex + Math.round(deltaY / drag.pitch);
+  next = Math.max(0, Math.min(drag.rows.length - 1, next));
+  if(next === drag.toIndex) return;   // nothing to re-shift
+  drag.toIndex = next;
+
+  // Shift the rows between the origin and the target to open the gap.
+  drag.rows.forEach((r, i) => {
+    if(r === drag.row) return;
+    let shift = 0;
+    if(drag.fromIndex < drag.toIndex && i > drag.fromIndex && i <= drag.toIndex){
+      shift = -drag.pitch;
+    }else if(drag.fromIndex > drag.toIndex && i >= drag.toIndex && i < drag.fromIndex){
+      shift = drag.pitch;
+    }
+    r.style.transform = shift ? `translateY(${shift}px)` : "";
+  });
+}
+
+function onDragEnd(e){
+  if(!drag) return;
+  const { handle, row, rows, fromIndex, toIndex } = drag;
+  drag = null;
+
+  try{ handle.releasePointerCapture(e.pointerId); }catch(err){ /* already released */ }
+  handle.removeEventListener("pointermove", onDragMove);
+  handle.removeEventListener("pointerup", onDragEnd);
+  handle.removeEventListener("pointercancel", onDragEnd);
+
+  row.classList.remove("dragging");
+  listEl.classList.remove("dragging-active");
+  rows.forEach(r => { r.style.transform = ""; });
+
+  if(toIndex !== fromIndex){
+    const [moved] = targetList.splice(fromIndex, 1);
+    targetList.splice(toIndex, 0, moved);
+    flushSave();
+    buildList();   // re-renders so the position-based colours stay in order
+  }
+}
+
+
+/* ---- Settings sheet ---- */
+
+function openSettings(){
+  settingsOverlay.classList.add("open");
+  settingsOverlay.removeAttribute("inert");
+  settingsOverlay.setAttribute("aria-hidden", "false");
+  menuBtn.setAttribute("aria-expanded", "true");
+  closeMenuBtn.focus();
+}
+
+function closeSettings(){
+  settingsOverlay.classList.remove("open");
+  settingsOverlay.setAttribute("inert", "");
+  settingsOverlay.setAttribute("aria-hidden", "true");
+  menuBtn.setAttribute("aria-expanded", "false");
+  menuBtn.focus();
+}
+
+menuBtn.addEventListener("click", openSettings);
+closeMenuBtn.addEventListener("click", closeSettings);
+document.addEventListener("keydown", (e) => {
+  if(e.key === "Escape" && settingsOverlay.classList.contains("open")) closeSettings();
+});
+
+/* Refresh forces a rates fetch instead of reloading the page — same result,
+   no white flash — and asks the service worker to check for a new build. */
+refreshLink.addEventListener("click", async (e) => {
+  e.preventDefault();
+  if(refreshLink.getAttribute("aria-disabled") === "true") return;
+  refreshLink.setAttribute("aria-disabled", "true");
+  refreshLink.textContent = "Refreshing…";
+  try{
+    await fetchRates({ force: true });
+    if(navigator.serviceWorker && navigator.serviceWorker.getRegistration){
+      const reg = await navigator.serviceWorker.getRegistration();
+      if(reg) reg.update().catch(() => {});
+    }
+  }finally{
+    refreshLink.textContent = "Refresh";
+    refreshLink.removeAttribute("aria-disabled");
+  }
+});
+
+
+/* ---- Theme ---- */
+
+function systemPrefersDark(){
+  return !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+}
+
+function readStoredTheme(){
+  try{ return localStorage.getItem(THEME_KEY); }catch(e){ return null; }
+}
+
+function applyTheme(theme){
+  const isDark = theme === "dark";
+  document.documentElement.setAttribute("data-theme", theme);
+  themeSwitch.setAttribute("aria-checked", isDark ? "true" : "false");
+
+  const iconPath = isDark ? "icon/Icon-192-dark.png" : "icon/Icon-192.png";
+  const appIcon = document.getElementById("appIcon");
+  const appleIcon = document.getElementById("appleIcon");
+  if(appIcon) appIcon.setAttribute("href", iconPath);
+  if(appleIcon) appleIcon.setAttribute("href", iconPath);
+  if(themeColorMeta) themeColorMeta.setAttribute("content", isDark ? "#1A1A1A" : "#EEEEEE");
+}
+
+/* Sync the switch with whatever the inline bootstrap already painted. */
+applyTheme(document.documentElement.getAttribute("data-theme") || "light");
+
+themeSwitch.addEventListener("click", () => {
+  const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+  try{ localStorage.setItem(THEME_KEY, next); }catch(e){ /* ignore */ }
+  applyTheme(next);
+});
+
+/* Follow the OS only while the user hasn't picked a theme themselves. */
+function followSystemTheme(){
+  if(!readStoredTheme()) applyTheme(systemPrefersDark() ? "dark" : "light");
+}
+
+if(window.matchMedia){
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  const onChange = () => followSystemTheme();
+  if(mq.addEventListener) mq.addEventListener("change", onChange);
+  else if(mq.addListener) mq.addListener(onChange);   // Safari < 14
+}
+
+
+/* ---- Returning to the app ---- */
+
+/* iOS doesn't fire matchMedia changes for a backgrounded PWA, so re-check the
+   theme on resume. Stale rates are refreshed at the same time. */
+document.addEventListener("visibilitychange", () => {
+  if(document.visibilityState !== "visible") return;
+  followSystemTheme();
+  if(!ratesAreFresh()) fetchRates({ quiet: true });
+});
+window.addEventListener("pageshow", followSystemTheme);
+
+// Connection came back: quietly pick up rates we couldn't fetch before.
+window.addEventListener("online", () => fetchRates({ force: true, quiet: true }));
+
+
+/* ============ 8. Boot ============ */
+
+function init(){
   const saved = loadState();
   if(saved){
-    base = saved.base || DEFAULT_BASE;
-    targetList = saved.targetList || [...DEFAULT_LIST];
-    rates = saved.rates || null;
+    base        = saved.base || DEFAULT_BASE;
+    targetList  = Array.isArray(saved.targetList) ? saved.targetList : [...DEFAULT_LIST];
+    rates       = saved.rates || null;
+    // v3 states written before ratesBase existed always matched `base`.
+    ratesBase   = saved.ratesBase || (saved.rates ? base : null);
     lastUpdated = saved.lastUpdated || null;
-    baseValue = typeof saved.baseValue === "number" ? saved.baseValue : 1;
+    baseValue   = typeof saved.baseValue === "number" ? saved.baseValue : 1;
   }
+
   populateBaseSelect();
-  baseCcy.value = base;
   baseAmount.value = fmt(baseValue);
   autosizeBase();
   updateLabels();
-  if(rates) buildList();
-  fetchRates();
+
+  // Paint from cache first so the app is usable before the network answers.
+  buildList();
+
+  if(ratesAreFresh()){
+    setStatus("", false);
+  }else{
+    fetchRates({ quiet: !!rates });   // quiet when we already have something on screen
+  }
 }
 
 init();
 
+/* Service worker: offline support and asset caching. updateViaCache:"none"
+   stops the browser serving sw.js itself from the HTTP cache, so updates are
+   picked up on the next visit. */
 if("serviceWorker" in navigator){
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js").catch(() => {});
+    navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).catch(() => {});
   });
 }
 </script>
