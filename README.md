@@ -40,7 +40,7 @@ cached by the service worker so it still renders offline.
 | [index.html](index.html) | The entire app: markup, styles and logic in one file |
 | [sw.js](sw.js) | Service worker: offline cache and asset strategies |
 | [manifest.json](manifest.json) | PWA metadata: name, icons, colours, display mode |
-| [icon/](icon/) | App icons at 192px and 512px, light and dark |
+| [icon/](icon/) | App icons at 1024px: light, dark and iOS tinted/clear variants |
 
 Inside [index.html](index.html) the script is divided into numbered sections:
 

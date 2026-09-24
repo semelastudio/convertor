@@ -12,7 +12,7 @@
    activate deletes every cache that doesn't match.
    ================================================================== */
 
-const CACHE_VERSION = "v6";
+const CACHE_VERSION = "v7";
 const CACHE_NAME = `quickconvertor-app-${CACHE_VERSION}`;
 
 /* Precached shell. These paths must match the files on disk exactly —
@@ -24,10 +24,8 @@ const ASSETS = [
   "./",
   "./index.html",
   "./manifest.json",
-  "./icon/Icon-192.png",
-  "./icon/Icon-512.png",
-  "./icon/Icon-192-dark.png",
-  "./icon/Icon-512-dark.png"
+  "./icon/QC%20ICON-iOS-Default-1024@1x.png",
+  "./icon/QC%20ICON-iOS-Dark-1024@1x.png"
 ];
 
 /* Hosts whose responses are worth caching even though they're cross-origin. */

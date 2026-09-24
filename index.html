@@ -7,8 +7,8 @@
 <meta name="description" content="A simple, fast, offline-capable currency converter.">
 <meta name="theme-color" content="#EEEEEE">
 <link rel="manifest" href="manifest.json">
-<link rel="icon" id="appIcon" type="image/png" href="icon/Icon-192.png">
-<link rel="apple-touch-icon" id="appleIcon" href="icon/Icon-192.png">
+<link rel="icon" id="appIcon" type="image/png" href="icon/QC%20ICON-iOS-Default-1024@1x.png">
+<link rel="apple-touch-icon" id="appleIcon" href="icon/QC%20ICON-iOS-Default-1024@1x.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="QuickConvertor">
@@ -46,7 +46,7 @@
     var meta = document.querySelector('meta[name="theme-color"]');
     if(meta) meta.setAttribute("content", isDark ? "#1A1A1A" : "#EEEEEE");
 
-    var iconPath = isDark ? "icon/Icon-192-dark.png" : "icon/Icon-192.png";
+    var iconPath = isDark ? "icon/QC%20ICON-iOS-Dark-1024@1x.png" : "icon/QC%20ICON-iOS-Default-1024@1x.png";
     var appIcon = document.getElementById("appIcon");
     var appleIcon = document.getElementById("appleIcon");
     if(appIcon) appIcon.setAttribute("href", iconPath);
@@ -1404,7 +1404,7 @@ function applyTheme(theme){
   document.documentElement.setAttribute("data-theme", theme);
   themeSwitch.setAttribute("aria-checked", isDark ? "true" : "false");
 
-  const iconPath = isDark ? "icon/Icon-192-dark.png" : "icon/Icon-192.png";
+  const iconPath = isDark ? "icon/QC%20ICON-iOS-Dark-1024@1x.png" : "icon/QC%20ICON-iOS-Default-1024@1x.png";
   const appIcon = document.getElementById("appIcon");
   const appleIcon = document.getElementById("appleIcon");
   if(appIcon) appIcon.setAttribute("href", iconPath);
