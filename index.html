@@ -724,8 +724,9 @@ const RATES_TTL_MS  = 30 * 60 * 1000;
    status line stuck on "Updating rates…" forever. */
 const FETCH_TIMEOUT_MS = 10000;
 
-/* Row background colours cycle by position — the design's rotating palette
-   (yellow, pink, teal, lime, mauve). */
+/* Row background colours — the design's rotating palette (yellow, pink, teal,
+   lime, mauve). Each currency keeps the colour it was given when it joined the
+   list, so dragging a row doesn't recolour it. */
 const ROW_COLORS = ["#FFCF3C", "#FFB7F4", "#A8D8DA", "#C7D96B", "#C2B1B1"];
 
 /* Intl formatters are expensive to construct, and fmt() runs once per row on
@@ -764,6 +765,18 @@ let base       = DEFAULT_BASE;      // currency the user types into
 let targetList = [...DEFAULT_LIST]; // codes shown as rows, in display order
 let lastUpdated = null;             // ISO string of the rates' publish time
 let baseValue  = 1;                 // the amount, in `base`
+let rowColors  = {};                // code -> index into ROW_COLORS
+
+/* Gives any currency without a colour the next one in the rotation after the
+   row above it, so new rows never match their neighbour. Existing lists get
+   the same colours they had under the old position-based scheme. */
+function assignRowColors(){
+  targetList.forEach((code, i) => {
+    if(typeof rowColors[code] === "number") return;
+    const prev = i > 0 ? rowColors[targetList[i - 1]] : -1;
+    rowColors[code] = (prev + 1) % ROW_COLORS.length;
+  });
+}
 
 /* code -> { row, input } for the rendered rows. refreshValues() runs on every
    keystroke; walking this map avoids a querySelectorAll each time. */
@@ -780,9 +793,10 @@ function saveState(){
 
 function flushSave(){
   if(saveTimer){ clearTimeout(saveTimer); saveTimer = null; }
+  assignRowColors();
   try{
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      base, targetList, rates, ratesBase, lastUpdated, baseValue
+      base, targetList, rowColors, rates, ratesBase, lastUpdated, baseValue
     }));
   }catch(e){
     /* Quota exceeded or private mode — the app still works, it just won't
@@ -1028,13 +1042,14 @@ function renderSearchResults(){
    structure. */
 function buildList(){
   rowRefs.clear();
+  assignRowColors();
 
-  listEl.innerHTML = targetList.map((code, index) => {
+  listEl.innerHTML = targetList.map((code) => {
     const rate = rates ? rates[code] : null;
     const hasRate = typeof rate === "number" && isFinite(rate);
     const rateText = hasRate ? `1 ${base} = ${rate.toFixed(4)} ${code}` : "rate unavailable";
     const value = hasRate ? fmt(baseValue * rate) : "";
-    const color = ROW_COLORS[index % ROW_COLORS.length];
+    const color = ROW_COLORS[rowColors[code] % ROW_COLORS.length];
 
     return `
       <div class="ccy-row" data-code="${code}" style="background:${color}">
@@ -1340,7 +1355,7 @@ function onDragEnd(e){
     const [moved] = targetList.splice(fromIndex, 1);
     targetList.splice(toIndex, 0, moved);
     flushSave();
-    buildList();   // re-renders so the position-based colours stay in order
+    buildList();
   }
 }
 
@@ -1456,6 +1471,7 @@ function init(){
   if(saved){
     base        = saved.base || DEFAULT_BASE;
     targetList  = Array.isArray(saved.targetList) ? saved.targetList : [...DEFAULT_LIST];
+    rowColors   = (saved.rowColors && typeof saved.rowColors === "object") ? saved.rowColors : {};
     rates       = saved.rates || null;
     // v3 states written before ratesBase existed always matched `base`.
     ratesBase   = saved.ratesBase || (saved.rates ? base : null);
